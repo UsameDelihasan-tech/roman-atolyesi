@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0e1015">
+  <meta name="theme-color" content="#101116">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,76 +13,177 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="style.css">
 </head>
-<body data-theme="night">
-  <div class="ambient-bg"></div>
+<body data-mode="night" data-ambience="library">
+  <div class="ambient-bg" aria-hidden="true"></div>
 
   <header class="topbar">
-    <button id="chaptersBtn" class="icon">☰</button>
+    <button id="homeBtn" class="icon-btn" aria-label="Ana sayfa">⌂</button>
     <div class="book-meta">
       <input id="bookTitle" value="Adsız Roman" aria-label="Roman adı">
       <small id="saveState">Kaydedildi</small>
     </div>
-    <button id="focusBtn" class="icon">◐</button>
+    <div class="top-actions">
+      <button id="modeBtn" class="icon-btn" aria-label="Gündüz moduna geç">☀</button>
+      <button id="chaptersBtn" class="icon-btn" aria-label="Bölümler">☰</button>
+    </div>
   </header>
 
   <aside id="drawer" class="drawer">
     <div class="drawer-head">
-      <h2>Bölümler</h2>
-      <button id="closeDrawer" class="icon">✕</button>
+      <div><small>ROMAN</small><h2>Bölümler</h2></div>
+      <button id="closeDrawer" class="icon-btn" aria-label="Kapat">✕</button>
     </div>
     <button id="newChapter" class="primary">+ Yeni bölüm</button>
     <div id="chapterList"></div>
+    <div class="drawer-footer"><button id="drawerExport">⇩ Metni dışa aktar</button></div>
   </aside>
   <div id="scrim" class="scrim"></div>
 
-  <main>
+  <section id="homeView" class="view active">
+    <div class="home-wrap">
+      <div class="book-hero">
+        <div class="book-cover" id="bookCover">
+          <div class="cover-spine"></div>
+          <span class="cover-kicker">ROMAN</span>
+          <h1 id="coverTitle">Adsız Roman</h1>
+          <div class="cover-rule"></div>
+          <p>Roman Atölyesi</p>
+        </div>
+        <div class="hero-copy">
+          <span class="eyebrow">YAZI MASAN</span>
+          <h2>Hikâyene kaldığın yerden devam et.</h2>
+          <p id="homeSummary">1 bölüm · 0 kelime</p>
+          <div class="hero-actions">
+            <button id="continueBtn" class="primary">✎ Yazmaya devam et</button>
+            <button id="readBookBtn" class="secondary">☷ Kitap gibi oku</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card">
+          <span>Son bölüm</span>
+          <strong id="lastChapterTitle">Bölüm 1</strong>
+          <small id="lastChapterWords">0 kelime</small>
+        </article>
+        <article class="dashboard-card">
+          <span>Toplam</span>
+          <strong id="totalWords">0 kelime</strong>
+          <small id="chapterCount">1 bölüm</small>
+        </article>
+        <article class="dashboard-card wide">
+          <div><span>Yazı görünümü</span><strong id="homeFontName">Georgia</strong></div>
+          <button id="homeAppearanceBtn" class="mini-btn">Aa Değiştir</button>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <main id="editorView" class="view">
+    <div class="editor-toolbar">
+      <div id="stats">0 kelime · 0 karakter</div>
+      <button id="focusBtn" class="mini-btn">◐ Odak</button>
+    </div>
     <section class="editor-shell">
       <input id="chapterTitle" class="chapter-title" value="Bölüm 1">
       <textarea id="editor" placeholder="Hikâyen burada başlıyor…" spellcheck="true"></textarea>
     </section>
   </main>
 
-  <footer>
-    <div id="stats">0 kelime · 0 karakter</div>
-    <div class="toolbar">
-      <button id="installBtn" hidden>📲 Uygulamayı kur</button>
-      <button id="themeBtn">🌙 Gece</button>
-      <button id="soundBtn">🎧 Ambiyans</button>
-      <button id="exportBtn">⇩ Dışa aktar</button>
+  <section id="readerView" class="view">
+    <div class="reader-wrap">
+      <div class="reader-titlebar">
+        <div><small>KİTAP GÖRÜNÜMÜ</small><strong id="readerChapter">Bölüm 1</strong></div>
+        <button id="readerAppearanceBtn" class="mini-btn">Aa</button>
+      </div>
+      <div id="bookStage" class="book-stage">
+        <div class="book-shadow" aria-hidden="true"></div>
+        <article id="bookPage" class="book-page" tabindex="0">
+          <div class="page-running-head">
+            <span id="readerBookTitle">Adsız Roman</span>
+            <span id="pageNumberTop">1</span>
+          </div>
+          <h2 id="pageChapterTitle">Bölüm 1</h2>
+          <div id="pageText" class="page-text"></div>
+          <div class="page-corner" aria-hidden="true"></div>
+        </article>
+      </div>
+      <div class="reader-nav">
+        <button id="prevPage" aria-label="Önceki sayfa">‹</button>
+        <span id="pageIndicator">1 / 1</span>
+        <button id="nextPage" aria-label="Sonraki sayfa">›</button>
+      </div>
+      <small class="swipe-hint">Sayfayı sola veya sağa kaydırabilirsin.</small>
     </div>
-  </footer>
+  </section>
 
-  <div id="themeSheet" class="sheet">
+  <nav class="bottom-nav">
+    <button data-view-target="home" class="active"><b>⌂</b><span>Ana sayfa</span></button>
+    <button data-view-target="editor"><b>✎</b><span>Yaz</span></button>
+    <button data-view-target="reader"><b>☷</b><span>Oku</span></button>
+    <button id="appearanceBtn"><b>Aa</b><span>Görünüm</span></button>
+    <button id="soundBtn"><b>♪</b><span>Ambiyans</span></button>
+  </nav>
+
+  <div id="appearanceSheet" class="sheet">
     <div class="sheet-card">
       <div class="handle"></div>
-      <h3>Ambiyans</h3>
-      <div class="theme-grid">
-        <button data-theme="night">🌙<span>Gece</span></button>
-        <button data-theme="rain">🌧️<span>Yağmur</span></button>
-        <button data-theme="candle">🕯️<span>Mum</span></button>
-        <button data-theme="library">📚<span>Kütüphane</span></button>
+      <div class="sheet-title">
+        <div><small>OKUMA & YAZMA</small><h3>Görünüm</h3></div>
+        <button class="close-sheet icon-btn">✕</button>
       </div>
-      <button class="close-sheet">Kapat</button>
+      <div class="setting-block">
+        <label>Gündüz / Gece</label>
+        <div class="segmented">
+          <button data-mode-choice="day">☀ Gündüz</button>
+          <button data-mode-choice="night">☾ Gece</button>
+        </div>
+      </div>
+      <div class="setting-block">
+        <label>Yazı tipi</label>
+        <div class="font-grid">
+          <button data-font="georgia" style="font-family:Georgia,serif">Georgia</button>
+          <button data-font="palatino" style="font-family:Palatino Linotype,Book Antiqua,serif">Palatino</button>
+          <button data-font="times" style="font-family:Times New Roman,serif">Times</button>
+          <button data-font="sans" style="font-family:system-ui,sans-serif">Modern</button>
+          <button data-font="mono" style="font-family:ui-monospace,monospace">Daktilo</button>
+        </div>
+      </div>
+      <div class="setting-block">
+        <label for="fontSize">Yazı boyutu <span id="fontSizeValue">19 px</span></label>
+        <input id="fontSize" type="range" min="16" max="26" value="19" step="1">
+      </div>
+      <div class="setting-block">
+        <label>Atmosfer</label>
+        <div class="theme-grid">
+          <button data-ambience="library">📚<span>Kütüphane</span></button>
+          <button data-ambience="rain">🌧️<span>Yağmur</span></button>
+          <button data-ambience="candle">🕯️<span>Mum</span></button>
+          <button data-ambience="plain">✦<span>Sade</span></button>
+        </div>
+      </div>
+      <div id="fontPreview" class="font-preview">Bir hikâye, doğru kelimeyle kapısını açar.</div>
     </div>
   </div>
 
   <div id="soundSheet" class="sheet">
     <div class="sheet-card">
       <div class="handle"></div>
-      <h3>Ambiyans sesi</h3>
+      <div class="sheet-title">
+        <div><small>ARKA PLAN</small><h3>Ambiyans sesi</h3></div>
+        <button class="close-sheet icon-btn">✕</button>
+      </div>
       <div class="sound-grid">
         <button data-sound="rain">🌧️ Yağmur</button>
         <button data-sound="fire">🔥 Şömine</button>
         <button data-sound="brown">🌌 Derin uğultu</button>
         <button data-sound="off">🔇 Kapat</button>
       </div>
-      <label class="volume">Ses
-        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.16">
-      </label>
-      <button class="close-sheet">Kapat</button>
+      <label class="volume">Ses <input id="volume" type="range" min="0" max="1" step="0.01" value="0.16"></label>
     </div>
   </div>
 
+  <button id="installBtn" class="install-fab" hidden>📲 Uygulamayı kur</button>
   <div id="toast" class="toast"></div>
 
   <script src="app.js"></script>

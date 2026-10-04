@@ -1,19 +1,16 @@
-# Roman Atölyesi v2
+# Roman Atölyesi v3
 
-Telefon için kurulabilir PWA roman yazma uygulaması.
+Telefon için kitap hissi veren, çevrimdışı çalışabilen roman yazma ve okuma PWA'sı.
 
-## v2 ile gelenler
-- Android ana ekranına uygulama olarak kurulabilme
-- 192x192 ve 512x512 uygulama ikonları
-- Android için maskable/adaptive ikon
-- Uygulama içinden “Uygulamayı kur” düğmesi
-- GitHub'daki yeni sürümleri yeniden APK kurmadan alma
-- Çevrimdışı açılabilme
-- Mevcut roman verilerini aynı localStorage anahtarıyla koruma
-
-## Güncelleme mantığı
-Kod GitHub Pages'a yeni sürüm olarak yüklendiğinde uygulama çevrimiçiyken
-en yeni dosyaları alır. Yazılan roman metinleri GitHub'a gönderilmez; cihazda tutulur.
-
-Önemli: Tarayıcı/uygulama verileri tamamen silinirse yerel roman verileri de silinebilir.
-Bu nedenle düzenli olarak TXT dışa aktarımıyla yedek alın.
+- Gerçek Gündüz / Gece modu
+- Kitap kapaklı yeni ana sayfa
+- Yaz / Oku / Görünüm / Ambiyans alt menüsü
+- Sayfa sayfa kitap okuma görünümü
+- Sola/sağa kaydırarak sayfa çevirme
+- Sayfa geçiş animasyonu
+- Georgia, Palatino, Times, Modern ve Daktilo font seçenekleri
+- Yazı boyutu ayarı
+- Kütüphane, Yağmur, Mum ve Sade atmosferleri
+- Bölüm yeniden adlandırma korunur
+- Eski localStorage anahtarı korunur; mevcut roman verisi silinmez
+- Offline çalışma korunur
