@@ -44,8 +44,18 @@ function renderList(){
   state.chapters.forEach((c,i)=>{
     const row=document.createElement("div");
     row.className="chapter-row"+(c.id===state.activeId?" active":"");
-    row.innerHTML=`<div class="chapter-info"><strong>${esc(c.title||`Bölüm ${i+1}`)}</strong><small>${words(c.content||"")} kelime</small></div><button class="delete">⋮</button>`;
+    row.innerHTML=`<div class="chapter-info"><strong>${esc(c.title||`Bölüm ${i+1}`)}</strong><small>${words(c.content||"")} kelime</small></div><button type="button" class="rename" aria-label="Bölüm adını düzenle" title="Bölüm adını düzenle">✎</button><button class="delete">⋮</button>`;
     row.querySelector(".chapter-info").onclick=()=>{state.activeId=c.id;render();closeDrawer();};
+    row.querySelector(".rename").onclick=e=>{
+      e.stopPropagation();
+      const name=prompt("Yeni bölüm adı:",c.title||`Bölüm ${i+1}`);
+      if(name===null) return;
+      const title=name.trim();
+      if(!title){showToast("Bölüm adı boş olamaz.");return;}
+      c.title=title;
+      if(state.activeId===c.id) $("#chapterTitle").value=title;
+      saveNow();renderList();
+    };
     row.querySelector(".delete").onclick=e=>{
       e.stopPropagation();
       if(state.chapters.length===1){showToast("En az bir bölüm kalmalı.");return;}
