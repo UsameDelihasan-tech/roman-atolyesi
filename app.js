@@ -151,7 +151,57 @@ $("#volume").oninput=e=>{if(master)master.gain.value=parseFloat(e.target.value);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)saveNow();});
 window.addEventListener("beforeunload",saveNow);
 
+
+
+/* PWA kurulumu */
+let deferredInstallPrompt = null;
+const installBtn = $("#installBtn");
+
+function isStandalone(){
+  return window.matchMedia("(display-mode: standalone)").matches ||
+         window.navigator.standalone === true;
+}
+
+if (isStandalone()) installBtn.hidden = true;
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (!isStandalone()) installBtn.hidden = false;
+});
+
+installBtn.addEventListener("click", async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.hidden = true;
+    if (choice.outcome === "accepted") showToast("Roman Atölyesi kuruluyor…");
+  } else {
+    showToast("Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle” seç.");
+  }
+});
+
+window.addEventListener("appinstalled", () => {
+  installBtn.hidden = true;
+  showToast("Roman Atölyesi kuruldu.");
+});
+
+
 render();
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  let refreshing = false;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    location.reload();
+  });
+
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("sw.js", { updateViaCache: "none" });
+      await reg.update();
+    } catch {}
+  });
 }
