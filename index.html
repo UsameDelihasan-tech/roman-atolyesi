@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="style.css">
 </head>
-<body data-mode="night" data-ambience="library">
+<body data-mode="night" data-ambience="library" data-paper="antique">
   <div class="ambient-bg" aria-hidden="true"></div>
 
   <header class="topbar">
@@ -72,8 +72,8 @@
           <small id="chapterCount">1 bölüm</small>
         </article>
         <article class="dashboard-card wide">
-          <div><span>Yazı görünümü</span><strong id="homeFontName">Georgia</strong></div>
-          <button id="homeAppearanceBtn" class="mini-btn">Aa Değiştir</button>
+          <div><span>Kitap görünümü</span><strong id="homeReaderMode">Tek sayfa · Gerçekçi 3D</strong></div>
+          <button id="homeAppearanceBtn" class="mini-btn">Aa Ayarla</button>
         </article>
       </div>
     </div>
@@ -81,10 +81,13 @@
 
   <main id="editorView" class="view">
     <div class="editor-toolbar">
-      <div id="stats">0 kelime · 0 karakter</div>
+      <div>
+        <div id="stats">0 kelime · 0 karakter</div>
+        <small id="typingSoundIndicator">Yazma sesi: Kapalı</small>
+      </div>
       <button id="focusBtn" class="mini-btn">◐ Odak</button>
     </div>
-    <section class="editor-shell">
+    <section class="editor-shell paper-surface">
       <input id="chapterTitle" class="chapter-title" value="Bölüm 1">
       <textarea id="editor" placeholder="Hikâyen burada başlıyor…" spellcheck="true"></textarea>
     </section>
@@ -94,26 +97,33 @@
     <div class="reader-wrap">
       <div class="reader-titlebar">
         <div><small>KİTAP GÖRÜNÜMÜ</small><strong id="readerChapter">Bölüm 1</strong></div>
-        <button id="readerAppearanceBtn" class="mini-btn">Aa</button>
+        <div class="reader-quick-actions">
+          <button id="layoutBtn" class="mini-btn">▣ Tek sayfa</button>
+          <button id="readerAppearanceBtn" class="mini-btn">Aa</button>
+        </div>
       </div>
+
       <div id="bookStage" class="book-stage">
-        <div class="book-shadow" aria-hidden="true"></div>
-        <article id="bookPage" class="book-page" tabindex="0">
-          <div class="page-running-head">
-            <span id="readerBookTitle">Adsız Roman</span>
-            <span id="pageNumberTop">1</span>
+        <div id="readerBook" class="reader-book layout-single flip-realistic" aria-label="Kitap okuma alanı">
+          <div class="book-backboard" aria-hidden="true"></div>
+          <div class="book-gutter" aria-hidden="true"></div>
+          <article id="leftPage" class="paper-page page-left paper-surface" aria-hidden="true"></article>
+          <article id="rightPage" class="paper-page page-right paper-surface"></article>
+
+          <div id="flipPage" class="flip-page" aria-hidden="true">
+            <article id="flipFront" class="paper-page flip-face flip-front paper-surface"></article>
+            <article id="flipBack" class="paper-page flip-face flip-back paper-surface"></article>
           </div>
-          <h2 id="pageChapterTitle">Bölüm 1</h2>
-          <div id="pageText" class="page-text"></div>
-          <div class="page-corner" aria-hidden="true"></div>
-        </article>
+          <div id="flipShade" class="flip-shade" aria-hidden="true"></div>
+        </div>
       </div>
+
       <div class="reader-nav">
         <button id="prevPage" aria-label="Önceki sayfa">‹</button>
         <span id="pageIndicator">1 / 1</span>
         <button id="nextPage" aria-label="Sonraki sayfa">›</button>
       </div>
-      <small class="swipe-hint">Sayfayı sola veya sağa kaydırabilirsin.</small>
+      <small class="swipe-hint">Sayfanın kenarından tutup sürükle. Parmağını bıraktığında sayfa fiziksel olarak döner.</small>
     </div>
   </section>
 
@@ -122,7 +132,7 @@
     <button data-view-target="editor"><b>✎</b><span>Yaz</span></button>
     <button data-view-target="reader"><b>☷</b><span>Oku</span></button>
     <button id="appearanceBtn"><b>Aa</b><span>Görünüm</span></button>
-    <button id="soundBtn"><b>♪</b><span>Ambiyans</span></button>
+    <button id="soundBtn"><b>♪</b><span>Ses</span></button>
   </nav>
 
   <div id="appearanceSheet" class="sheet">
@@ -132,6 +142,7 @@
         <div><small>OKUMA & YAZMA</small><h3>Görünüm</h3></div>
         <button class="close-sheet icon-btn">✕</button>
       </div>
+
       <div class="setting-block">
         <label>Gündüz / Gece</label>
         <div class="segmented">
@@ -139,6 +150,37 @@
           <button data-mode-choice="night">☾ Gece</button>
         </div>
       </div>
+
+      <div class="setting-block">
+        <label>Okuma düzeni</label>
+        <div class="segmented">
+          <button data-reader-layout="single">▣ Tek sayfa</button>
+          <button data-reader-layout="spread">▥ Çift sayfa</button>
+        </div>
+        <small class="setting-note">Tek sayfa telefona uygundur. Çift sayfa gerçek açık kitap görünümü verir.</small>
+      </div>
+
+      <div class="setting-block">
+        <label>Sayfa çevirme animasyonu</label>
+        <div class="animation-grid">
+          <button data-flip-style="realistic"><b>◫</b><span>Gerçekçi 3D</span><small>Derinlik + kıvrım</small></button>
+          <button data-flip-style="soft"><b>◧</b><span>Yumuşak 3D</span><small>Daha hafif</small></button>
+          <button data-flip-style="slide"><b>⇆</b><span>Kaydır</span><small>En akıcı</small></button>
+        </div>
+      </div>
+
+      <div class="setting-block">
+        <label>Kağıt dokusu</label>
+        <div class="texture-grid">
+          <button data-paper="ivory">Fildişi</button>
+          <button data-paper="parchment">Parşömen</button>
+          <button data-paper="newsprint">Gazete</button>
+          <button data-paper="antique">Eski kitap</button>
+          <button data-paper="nightink">Gece mürekkebi</button>
+          <button data-paper="clean">Temiz</button>
+        </div>
+      </div>
+
       <div class="setting-block">
         <label>Yazı tipi</label>
         <div class="font-grid">
@@ -149,10 +191,12 @@
           <button data-font="mono" style="font-family:ui-monospace,monospace">Daktilo</button>
         </div>
       </div>
+
       <div class="setting-block">
         <label for="fontSize">Yazı boyutu <span id="fontSizeValue">19 px</span></label>
-        <input id="fontSize" type="range" min="16" max="26" value="19" step="1">
+        <input id="fontSize" type="range" min="16" max="27" value="19" step="1">
       </div>
+
       <div class="setting-block">
         <label>Atmosfer</label>
         <div class="theme-grid">
@@ -162,7 +206,8 @@
           <button data-ambience="plain">✦<span>Sade</span></button>
         </div>
       </div>
-      <div id="fontPreview" class="font-preview">Bir hikâye, doğru kelimeyle kapısını açar.</div>
+
+      <div id="fontPreview" class="font-preview paper-surface">Bir hikâye, doğru kelimeyle kapısını açar.</div>
     </div>
   </div>
 
@@ -170,22 +215,40 @@
     <div class="sheet-card">
       <div class="handle"></div>
       <div class="sheet-title">
-        <div><small>ARKA PLAN</small><h3>Ambiyans sesi</h3></div>
+        <div><small>SES TASARIMI</small><h3>Yazma & Ambiyans</h3></div>
         <button class="close-sheet icon-btn">✕</button>
       </div>
-      <div class="sound-grid">
-        <button data-sound="rain">🌧️ Yağmur</button>
-        <button data-sound="fire">🔥 Şömine</button>
-        <button data-sound="brown">🌌 Derin uğultu</button>
-        <button data-sound="off">🔇 Kapat</button>
+
+      <div class="setting-block">
+        <label>Yazarken çıkan ses</label>
+        <div class="writing-sound-grid">
+          <button data-typing-sound="off">🔇<span>Kapalı</span></button>
+          <button data-typing-sound="typewriter">⌨<span>Daktilo</span></button>
+          <button data-typing-sound="pencil">✎<span>Kalem</span></button>
+          <button data-typing-sound="fountain">✒<span>Mürekkep</span></button>
+        </div>
+        <label class="volume">Yazma sesi
+          <input id="typingVolume" type="range" min="0" max="0.55" step="0.01" value="0.18">
+        </label>
       </div>
-      <label class="volume">Ses <input id="volume" type="range" min="0" max="1" step="0.01" value="0.16"></label>
+
+      <div class="setting-block">
+        <label>Arka plan ambiyansı</label>
+        <div class="sound-grid">
+          <button data-sound="rain">🌧️ Yağmur</button>
+          <button data-sound="fire">🔥 Şömine</button>
+          <button data-sound="brown">🌌 Derin uğultu</button>
+          <button data-sound="off">🔇 Kapat</button>
+        </div>
+        <label class="volume">Ambiyans
+          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.16">
+        </label>
+      </div>
     </div>
   </div>
 
   <button id="installBtn" class="install-fab" hidden>📲 Uygulamayı kur</button>
   <div id="toast" class="toast"></div>
-
   <script src="app.js"></script>
 </body>
 </html>
