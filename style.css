@@ -111,3 +111,10 @@ body.focus .editor-shell{border-color:transparent;box-shadow:none;background:tra
   .editor-shell{padding:36px 48px}
   #editor{font-size:20px}
 }
+
+.toolbar button[hidden]{display:none!important}
+#installBtn{
+  background:var(--accent);
+  color:#17120b;
+  border-color:transparent;
+}

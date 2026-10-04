@@ -1,22 +1,19 @@
-# Roman Atölyesi
+# Roman Atölyesi v2
 
-Telefonda roman yazmak için hazırlanmış ambiyanslı PWA.
+Telefon için kurulabilir PWA roman yazma uygulaması.
 
-Özellikler:
-- Bölüm ekleme ve silme
-- Otomatik kayıt
-- Kelime ve karakter sayacı
-- Odak modu
-- Gece / yağmur / mum / kütüphane temaları
-- İnternet gerektirmeyen ambiyans sesleri
-- TXT olarak dışa aktarma
-- Ana ekrana uygulama gibi kurulabilme
+## v2 ile gelenler
+- Android ana ekranına uygulama olarak kurulabilme
+- 192x192 ve 512x512 uygulama ikonları
+- Android için maskable/adaptive ikon
+- Uygulama içinden “Uygulamayı kur” düğmesi
+- GitHub'daki yeni sürümleri yeniden APK kurmadan alma
+- Çevrimdışı açılabilme
+- Mevcut roman verilerini aynı localStorage anahtarıyla koruma
 
-## Telefonda Replit ile çalıştırma
-1. Replit'te yeni bir HTML/CSS/JS projesi oluştur.
-2. ZIP'i açıp içindeki dosyaları projeye yükle.
-3. Run'a bas.
-4. Açılan bağlantıyı Chrome'da aç.
-5. Chrome menüsünden "Ana ekrana ekle" veya "Uygulamayı yükle" seçeneğini kullan.
+## Güncelleme mantığı
+Kod GitHub Pages'a yeni sürüm olarak yüklendiğinde uygulama çevrimiçiyken
+en yeni dosyaları alır. Yazılan roman metinleri GitHub'a gönderilmez; cihazda tutulur.
 
-Not: Yazılar tarayıcının localStorage alanında saklanır. Telefon/tarayıcı verilerini temizlemeden önce romanını TXT olarak dışa aktar.
+Önemli: Tarayıcı/uygulama verileri tamamen silinirse yerel roman verileri de silinebilir.
+Bu nedenle düzenli olarak TXT dışa aktarımıyla yedek alın.
