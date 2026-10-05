@@ -58,6 +58,7 @@
           <div class="hero-actions">
             <button id="continueBtn" class="primary">✎ Yazmaya devam et</button>
             <button id="readBookBtn" class="secondary">☷ Kitap gibi oku</button>
+            <button id="home3DBtn" class="secondary">◉ 3D Masa</button>
             <button id="coverBtn" class="secondary">▣ Kapak</button>
           </div>
         </div>
@@ -109,6 +110,7 @@
         <div><small>KİTAP GÖRÜNÜMÜ</small><strong id="readerChapter">Bölüm 1</strong></div>
         <div class="reader-quick-actions">
           <button id="layoutBtn" class="mini-btn">▣ Tek sayfa</button>
+          <button id="reader3DBtn" class="mini-btn">◉ 3D</button>
           <button id="readerAppearanceBtn" class="mini-btn">Aa</button>
         </div>
       </div>
@@ -138,10 +140,80 @@
     </div>
   </section>
 
+
+  <section id="sceneView" class="view">
+    <div class="scene-wrap">
+      <div class="scene-titlebar">
+        <div>
+          <small>3D KİTAP ODASI</small>
+          <strong id="sceneBookName">Adsız Roman</strong>
+        </div>
+        <button id="sceneResetBtn" class="mini-btn">↺ Sıfırla</button>
+      </div>
+
+      <div id="sceneViewport" class="scene-viewport" aria-label="3D kitap sahnesi">
+        <div class="scene-dome" aria-hidden="true"></div>
+        <div class="scene-room" aria-hidden="true">
+          <div class="scene-back-wall"></div>
+          <div class="scene-table-plane"></div>
+          <div class="scene-prop-book prop-a"><i></i></div>
+          <div class="scene-prop-book prop-b"><i></i></div>
+          <div class="scene-prop-book prop-c"><i></i></div>
+        </div>
+
+        <div id="sceneBookRig" class="scene-book-rig">
+          <div id="sceneBook3D" class="scene-book3d" role="button" tabindex="0" aria-label="3D kitabı odakla">
+            <div class="scene-face scene-cover-front">
+              <div id="sceneCoverImage" class="scene-cover-image"></div>
+              <div class="scene-cover-glaze"></div>
+              <div class="scene-cover-text">
+                <small>ROMAN</small>
+                <strong id="sceneCoverTitle">Adsız Roman</strong>
+              </div>
+            </div>
+            <div class="scene-face scene-cover-back"></div>
+            <div class="scene-face scene-page-right"></div>
+            <div class="scene-face scene-page-left"></div>
+            <div class="scene-face scene-page-top"></div>
+            <div class="scene-face scene-page-bottom"></div>
+            <div class="scene-face scene-spine"></div>
+          </div>
+          <div class="scene-book-shadow" aria-hidden="true"></div>
+        </div>
+
+        <div class="scene-glass-highlight" aria-hidden="true"></div>
+        <div class="scene-gesture-hint" id="sceneGestureHint">
+          <b>Tek parmak</b> döndür · <b>İki parmak</b> yakınlaştır · Kitaba dokun odakla
+        </div>
+      </div>
+
+      <div class="scene-controls" aria-label="3D görünüm kontrolleri">
+        <div class="scene-control-row">
+          <label for="scenePitch">Açı <span id="scenePitchValue">60°</span></label>
+          <input id="scenePitch" type="range" min="25" max="90" value="60" step="1">
+        </div>
+        <div class="scene-control-row">
+          <label for="sceneYaw">Yön <span id="sceneYawValue">-18°</span></label>
+          <input id="sceneYaw" type="range" min="-180" max="180" value="-18" step="1">
+        </div>
+        <div class="scene-control-row">
+          <label for="sceneZoom">Yakınlık <span id="sceneZoomValue">%100</span></label>
+          <input id="sceneZoom" type="range" min="60" max="170" value="100" step="1">
+        </div>
+        <div class="scene-meta">
+          <span id="scenePageCount">1 sayfa</span>
+          <span>60° varsayılan açı</span>
+          <span>GPU-hafif 3D</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <nav class="bottom-nav">
     <button data-view-target="home" class="active"><b>⌂</b><span>Ana sayfa</span></button>
     <button data-view-target="editor"><b>✎</b><span>Yaz</span></button>
     <button data-view-target="reader"><b>☷</b><span>Oku</span></button>
+    <button data-view-target="scene"><b>◉</b><span>3D</span></button>
     <button id="appearanceBtn"><b>Aa</b><span>Görünüm</span></button>
     <button id="soundBtn"><b>♪</b><span>Ses</span></button>
   </nav>
@@ -178,6 +250,15 @@
           <button data-flip-style="soft"><b>◧</b><span>Yumuşak 3D</span><small>Daha hafif</small></button>
           <button data-flip-style="slide"><b>⇆</b><span>Kaydır</span><small>En akıcı</small></button>
         </div>
+      </div>
+
+      <div class="setting-block scene-setting-card">
+        <label>3D masa görünümü</label>
+        <button id="open3DSceneBtn" class="scene-launch-btn">
+          <span class="scene-launch-icon">◉</span>
+          <span><b>Kitabı 3D ortamda incele</b><small>Varsayılan 60° açı · sürükle · iki parmakla yakınlaştır</small></span>
+          <i>›</i>
+        </button>
       </div>
 
       <div class="setting-block">
@@ -223,7 +304,7 @@
 
       <div class="setting-block">
         <label for="fontSize">Yazı boyutu <span id="fontSizeValue">19 px</span></label>
-        <input id="fontSize" type="range" min="16" max="27" value="19" step="1">
+        <input id="fontSize" type="range" min="11" max="27" value="19" step="1">
       </div>
 
       <div class="setting-block">

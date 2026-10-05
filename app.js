@@ -25,6 +25,7 @@ const fresh=()=>{
   return{
     bookTitle:"Adsız Roman",mode:"night",ambience:"library",paper:"antique",
     font:"georgia",fontSize:19,pageScale:100,readerLayout:"single",flipStyle:"realistic",
+    scenePitch:60,sceneYaw:-18,sceneZoom:100,sceneRoll:0,
     typingSound:"off",typingVolume:.12,pageSound:"paper-soft",pageSoundVolume:.14,
     ambientSound:"off",ambientVolume:.12,coverFit:"cover",coverText:true,soundProfileVersion:5,activeId:id,
     chapters:[{id,title:"Bölüm 1",content:""}]
@@ -42,7 +43,7 @@ state.mode=state.mode||"night";
 state.ambience=state.ambience||(["rain","candle","library"].includes(state.theme)?state.theme:"library");
 state.paper=state.paper||"antique";
 state.font=state.font||"georgia";
-state.fontSize=Number(state.fontSize)||19;
+state.fontSize=Math.max(11,Math.min(27,Number(state.fontSize)||19));
 state.readerLayout=state.readerLayout||"single";
 state.flipStyle=state.flipStyle||"realistic";
 state.pageScale=Math.max(70,Math.min(130,Number(state.pageScale)||100));
@@ -54,6 +55,10 @@ state.ambientSound=state.ambientSound||"off";
 state.ambientVolume=Number.isFinite(Number(state.ambientVolume))?Number(state.ambientVolume):.12;
 state.coverFit=state.coverFit||"cover";
 state.coverText=state.coverText!==false;
+state.scenePitch=Math.max(25,Math.min(90,Number(state.scenePitch)||60));
+state.sceneYaw=Number.isFinite(Number(state.sceneYaw))?Math.max(-180,Math.min(180,Number(state.sceneYaw))):-18;
+state.sceneZoom=Math.max(60,Math.min(170,Number(state.sceneZoom)||100));
+state.sceneRoll=Math.max(-28,Math.min(28,Number(state.sceneRoll)||0));
 if(!state.soundProfileVersion||state.soundProfileVersion<5){
   state.typingVolume=Math.min(state.typingVolume||.12,.12);
   state.ambientVolume=Math.min(state.ambientVolume||.12,.12);
@@ -85,6 +90,8 @@ function updateBookThickness(pageCount=estimatedBookPages()){
   const px=clamp(4+pageCount*.055,4,30);
   document.documentElement.style.setProperty("--book-thickness",`${px.toFixed(1)}px`);
   document.documentElement.style.setProperty("--book-thickness-neg",`${(-px).toFixed(1)}px`);
+  const scenePx=clamp(12+pageCount*.14,12,44);
+  document.documentElement.style.setProperty("--scene-book-thickness",`${scenePx.toFixed(1)}px`);
 }
 
 function updateReaderSummary(){
@@ -116,6 +123,14 @@ function applyAppearance(){
   $("#fontSizeValue").textContent=`${state.fontSize} px`;
   $("#pageScale").value=state.pageScale;
   $("#pageScaleValue").textContent=`%${state.pageScale}`;
+  if($("#scenePitch")){
+    $("#scenePitch").value=state.scenePitch;
+    $("#sceneYaw").value=state.sceneYaw;
+    $("#sceneZoom").value=state.sceneZoom;
+    $("#scenePitchValue").textContent=`${Math.round(state.scenePitch)}°`;
+    $("#sceneYawValue").textContent=`${Math.round(state.sceneYaw)}°`;
+    $("#sceneZoomValue").textContent=`%${Math.round(state.sceneZoom)}`;
+  }
   $("#typingVolume").value=state.typingVolume;
   $("#pageSoundVolume").value=state.pageSoundVolume;
   $("#volume").value=state.ambientVolume;
@@ -145,6 +160,7 @@ function applyAppearance(){
   book.classList.remove("flip-realistic","flip-soft","flip-slide");
   book.classList.add(`flip-${state.flipStyle}`);
   $("#bookCover").classList.toggle("cover-text-off",!state.coverText);
+  applySceneTransform();
 }
 
 function updateStats(){
@@ -154,6 +170,8 @@ function updateStats(){
 function updateHome(){
   const c=active();
   $("#coverTitle").textContent=state.bookTitle||"Adsız Roman";
+  if($("#sceneBookName"))$("#sceneBookName").textContent=state.bookTitle||"Adsız Roman";
+  if($("#sceneCoverTitle"))$("#sceneCoverTitle").textContent=state.bookTitle||"Adsız Roman";
   $("#homeSummary").textContent=`${state.chapters.length} bölüm · ${totalWords()} kelime`;
   $("#totalWords").textContent=`${totalWords()} kelime`;
   $("#chapterCount").textContent=`${state.chapters.length} bölüm`;
@@ -240,20 +258,32 @@ function openSheet(id){$(id).classList.add("show");}
 function closeSheets(){$$(".sheet").forEach(x=>x.classList.remove("show"));}
 
 function openView(name){
-  const selector=name==="home"?"#homeView":name==="editor"?"#editorView":"#readerView";
+  const views={home:"#homeView",editor:"#editorView",reader:"#readerView",scene:"#sceneView"};
+  const selector=views[name]||views.home;
   const next=$(selector),current=document.querySelector(".view.active");
-  if(current===next){if(name==="reader"){buildReaderPages();renderReader();}return;}
+  if(current===next){
+    if(name==="reader"){buildReaderPages();renderReader();}
+    if(name==="scene")renderScene();
+    return;
+  }
   $$(".view").forEach(v=>v.classList.remove("active"));
   $$(".bottom-nav [data-view-target]").forEach(b=>b.classList.remove("active"));
   next.classList.add("active");
   next.classList.remove("view-reveal");void next.offsetWidth;next.classList.add("view-reveal");
   const tab=$(`.bottom-nav [data-view-target="${name}"]`);if(tab)tab.classList.add("active");
   if(name==="reader"){buildReaderPages();renderReader();}
+  if(name==="scene")renderScene();
   if(name==="home")updateHome();
   window.scrollTo(0,0);
 }
 
-$("#bookTitle").oninput=e=>{state.bookTitle=e.target.value;$("#coverTitle").textContent=state.bookTitle||"Adsız Roman";saveSoon();};
+$("#bookTitle").oninput=e=>{
+  state.bookTitle=e.target.value;
+  $("#coverTitle").textContent=state.bookTitle||"Adsız Roman";
+  if($("#sceneBookName"))$("#sceneBookName").textContent=state.bookTitle||"Adsız Roman";
+  if($("#sceneCoverTitle"))$("#sceneCoverTitle").textContent=state.bookTitle||"Adsız Roman";
+  saveSoon();
+};
 let editorMetricsTimer=0;
 function scheduleEditorMetrics(){
   clearTimeout(editorMetricsTimer);
@@ -276,7 +306,12 @@ $("#newChapter").onclick=()=>{
 $("#focusBtn").onclick=()=>{document.body.classList.toggle("focus");showToast(document.body.classList.contains("focus")?"Odak modu açık.":"Odak modu kapalı.");};
 $("#modeBtn").onclick=()=>{state.mode=state.mode==="night"?"day":"night";saveNow();applyAppearance();};
 $$("[data-view-target]").forEach(b=>b.onclick=()=>openView(b.dataset.viewTarget));
-$("#continueBtn").onclick=()=>openView("editor");$("#readBookBtn").onclick=()=>openView("reader");$("#coverBtn").onclick=()=>openSheet("#coverSheet");
+$("#continueBtn").onclick=()=>openView("editor");
+$("#readBookBtn").onclick=()=>openView("reader");
+$("#home3DBtn").onclick=()=>openView("scene");
+$("#reader3DBtn").onclick=()=>openView("scene");
+$("#open3DSceneBtn").onclick=()=>{closeSheets();openView("scene");};
+$("#coverBtn").onclick=()=>openSheet("#coverSheet");
 
 $("#appearanceBtn").onclick=()=>openSheet("#appearanceSheet");
 $("#homeAppearanceBtn").onclick=()=>openSheet("#appearanceSheet");
@@ -311,6 +346,129 @@ $("#pageScale").onchange=()=>{saveNow();scheduleRepaginate(0);updateHome();};
 $$('[data-cover-fit]').forEach(b=>b.onclick=()=>{state.coverFit=b.dataset.coverFit;saveNow();applyAppearance();applyCoverVisual();});
 $$('[data-cover-text]').forEach(b=>b.onclick=()=>{state.coverText=b.dataset.coverText==="on";saveNow();applyAppearance();});
 $("#layoutBtn").onclick=()=>{state.readerLayout=state.readerLayout==="single"?"spread":"single";saveNow();applyAppearance();buildReaderPages();renderReader();};
+
+/* ---------- v7: hafif 3D masa / fanus modu ---------- */
+let sceneFrame=0;
+const scenePointers=new Map();
+let sceneGesture=null;
+let sceneMoved=false;
+
+function normalizeAngle(v){
+  let n=v;
+  while(n>180)n-=360;
+  while(n<-180)n+=360;
+  return n;
+}
+function applySceneTransform(){
+  const rig=$("#sceneBookRig");
+  if(!rig)return;
+  const pitch=clamp(Number(state.scenePitch)||60,25,90);
+  const tilt=90-pitch;
+  const yaw=normalizeAngle(Number(state.sceneYaw)||0);
+  const roll=clamp(Number(state.sceneRoll)||0,-28,28);
+  const zoom=clamp(Number(state.sceneZoom)||100,60,170);
+  const scale=zoom/100;
+  rig.style.setProperty("--scene-tilt",`${tilt.toFixed(2)}deg`);
+  rig.style.setProperty("--scene-yaw",`${yaw.toFixed(2)}deg`);
+  rig.style.setProperty("--scene-roll",`${roll.toFixed(2)}deg`);
+  rig.style.setProperty("--scene-scale",scale.toFixed(3));
+  const rad=yaw*Math.PI/180;
+  rig.style.setProperty("--scene-shadow-x",`${(Math.sin(rad)*24).toFixed(1)}px`);
+  rig.style.setProperty("--scene-shadow-y",`${(18+tilt*.18).toFixed(1)}px`);
+  rig.style.setProperty("--scene-light-x",`${clamp(52-yaw*.12,20,82).toFixed(1)}%`);
+  rig.style.setProperty("--scene-light-y",`${clamp(24+tilt*.55,18,65).toFixed(1)}%`);
+  if($("#scenePitchValue"))$("#scenePitchValue").textContent=`${Math.round(pitch)}°`;
+  if($("#sceneYawValue"))$("#sceneYawValue").textContent=`${Math.round(yaw)}°`;
+  if($("#sceneZoomValue"))$("#sceneZoomValue").textContent=`%${Math.round(zoom)}`;
+}
+function requestSceneTransform(){
+  if(sceneFrame)return;
+  sceneFrame=requestAnimationFrame(()=>{sceneFrame=0;applySceneTransform();});
+}
+function renderScene(){
+  buildReaderPages();
+  updateBookThickness(readerPages.length||estimatedBookPages());
+  $("#sceneBookName").textContent=state.bookTitle||"Adsız Roman";
+  $("#sceneCoverTitle").textContent=state.bookTitle||"Adsız Roman";
+  $("#scenePageCount").textContent=`${readerPages.length||estimatedBookPages()} sayfa`;
+  $("#scenePitch").value=state.scenePitch;
+  $("#sceneYaw").value=state.sceneYaw;
+  $("#sceneZoom").value=state.sceneZoom;
+  applySceneTransform();
+}
+function resetScene(focus=false){
+  state.scenePitch=60;
+  state.sceneYaw=-18;
+  state.sceneRoll=0;
+  state.sceneZoom=focus?112:100;
+  saveNow();renderScene();
+}
+$("#sceneResetBtn").onclick=()=>resetScene(false);
+$("#scenePitch").oninput=e=>{state.scenePitch=clamp(Number(e.target.value)||60,25,90);requestSceneTransform();};
+$("#sceneYaw").oninput=e=>{state.sceneYaw=normalizeAngle(Number(e.target.value)||0);requestSceneTransform();};
+$("#sceneZoom").oninput=e=>{state.sceneZoom=clamp(Number(e.target.value)||100,60,170);requestSceneTransform();};
+["scenePitch","sceneYaw","sceneZoom"].forEach(id=>$("#"+id).addEventListener("change",saveNow));
+
+function scenePointDistance(a,b){return Math.hypot(b.x-a.x,b.y-a.y);}
+function scenePointAngle(a,b){return Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;}
+function sceneBeginGesture(){
+  const points=[...scenePointers.values()];
+  sceneMoved=false;
+  if(points.length===1){
+    sceneGesture={type:"orbit",x:points[0].x,y:points[0].y,pitch:state.scenePitch,yaw:state.sceneYaw,roll:state.sceneRoll,zoom:state.sceneZoom};
+  }else if(points.length>=2){
+    sceneGesture={type:"pinch",dist:scenePointDistance(points[0],points[1])||1,angle:scenePointAngle(points[0],points[1]),zoom:state.sceneZoom,roll:state.sceneRoll,pitch:state.scenePitch,yaw:state.sceneYaw};
+  }
+}
+const sceneViewport=$("#sceneViewport");
+sceneViewport.addEventListener("pointerdown",e=>{
+  sceneViewport.setPointerCapture?.(e.pointerId);
+  scenePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  sceneBeginGesture();
+  $("#sceneBookRig").classList.add("scene-interacting");
+},{passive:true});
+sceneViewport.addEventListener("pointermove",e=>{
+  if(!scenePointers.has(e.pointerId))return;
+  scenePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const points=[...scenePointers.values()];
+  if(!sceneGesture)return;
+  if(points.length===1&&sceneGesture.type==="orbit"){
+    const dx=points[0].x-sceneGesture.x,dy=points[0].y-sceneGesture.y;
+    if(Math.abs(dx)+Math.abs(dy)>3)sceneMoved=true;
+    state.sceneYaw=normalizeAngle(sceneGesture.yaw+dx*.34);
+    state.scenePitch=clamp(sceneGesture.pitch-dy*.16,25,90);
+    requestSceneTransform();
+  }else if(points.length>=2){
+    if(sceneGesture.type!=="pinch")sceneBeginGesture();
+    const g=sceneGesture;
+    const dist=scenePointDistance(points[0],points[1])||1;
+    const angle=scenePointAngle(points[0],points[1]);
+    state.sceneZoom=clamp(g.zoom*(dist/g.dist),60,170);
+    state.sceneRoll=clamp(g.roll+(angle-g.angle)*.42,-28,28);
+    sceneMoved=true;
+    requestSceneTransform();
+  }
+},{passive:true});
+function sceneEndPointer(e){
+  if(!scenePointers.has(e.pointerId))return;
+  scenePointers.delete(e.pointerId);
+  if(scenePointers.size)sceneBeginGesture();
+  else{
+    sceneGesture=null;
+    $("#sceneBookRig").classList.remove("scene-interacting");
+    saveNow();
+  }
+}
+sceneViewport.addEventListener("pointerup",sceneEndPointer,{passive:true});
+sceneViewport.addEventListener("pointercancel",sceneEndPointer,{passive:true});
+$("#sceneBook3D").addEventListener("click",()=>{
+  if(sceneMoved){sceneMoved=false;return;}
+  resetScene(true);
+});
+$("#sceneBook3D").addEventListener("keydown",e=>{
+  if(e.key==="Enter"||e.key===" "){e.preventDefault();resetScene(true);}
+});
+
 
 /* ---------- Sayfalama ---------- */
 let readerPages=[];
@@ -807,9 +965,16 @@ function applyCoverVisual(){
     coverObjectUrl=URL.createObjectURL(coverBlobCache);
     layer.style.backgroundImage=`url("${coverObjectUrl}")`;layer.style.backgroundSize=state.coverFit;
     preview.style.backgroundImage=`url("${coverObjectUrl}")`;preview.style.backgroundSize=state.coverFit;
+    const sceneLayer=$("#sceneCoverImage"),sceneBook=$("#sceneBook3D");
+    if(sceneLayer){sceneLayer.style.backgroundImage=`url("${coverObjectUrl}")`;sceneLayer.style.backgroundSize=state.coverFit;}
+    if(sceneBook)sceneBook.classList.add("has-cover");
     cover.classList.add("has-cover");preview.classList.add("has-image");
   }else{
-    layer.style.backgroundImage="";preview.style.backgroundImage="";cover.classList.remove("has-cover");preview.classList.remove("has-image");
+    layer.style.backgroundImage="";preview.style.backgroundImage="";
+    const sceneLayer=$("#sceneCoverImage"),sceneBook=$("#sceneBook3D");
+    if(sceneLayer)sceneLayer.style.backgroundImage="";
+    if(sceneBook)sceneBook.classList.remove("has-cover");
+    cover.classList.remove("has-cover");preview.classList.remove("has-image");
   }
 }
 async function compressCover(file){
