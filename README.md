@@ -1,21 +1,17 @@
-# Roman Atölyesi v5 — Fiziksel Kitap Motoru
+# Roman Atölyesi v6 — Smooth Mechanics
 
-Telefon için çevrimdışı çalışan PWA roman yazma ve okuma uygulaması.
+v5 Ultra Kitap üzerine performans ve mikro-etkileşim revizyonu.
 
-## v5 yenilikleri
-- Parmağın başlangıç köşesini ve çapraz hareketini izleyen gerçek zamanlı 3D sayfa dönüşü
-- Sayfa dönüşünde yumuşak kağıt / yeni kağıt / parşömen / kumaş sesleri
-- Düşük yoruculuklu yeni WebAudio motoru ve limiter/compressor
-- 12 farklı yazma sesi: daktilo, keçe tuş, kalem, dolma kalem, tüy kalem, fırça, bubble, damla, soft tap, cam tık, tebeşir ve sessiz
-- 16 ambiyans: iki yağmur, şömine, kütüphane, kafe, orman, gece, okyanus, tren, rüzgar, plak, saat, brown/pink noise, kar ve sessiz
-- Yazma, sayfa ve ambiyans sesleri açılır sembollü listeler halinde
-- Kitap sayfası yoğunluğu %70–130 arasında her yüzde ayarlanabilir
-- 15 kağıt/yüzey dokusu; kırışık kağıt, kar, kadife, kilim, keten, kraft, mermer, deri ve pirinç kağıdı dahil
-- Cihaza özel kapak görseli ekleme; IndexedDB'de çevrimdışı saklanır
-- Sayfa sayısı arttıkça kapak ve kitap gövdesi görsel olarak kalınlaşır
-- Tek sayfa ve çift sayfa kitap düzenleri korunur
-- Roman verileri yine `roman_atolyesi_v1` anahtarında tutulur; mevcut metinler korunur
-- PWA önbelleği v5'e yükseltildi ve tüm doku dosyaları çevrimdışı önbelleğe alınır
-
-## Performans
-Sayfa sürükleme sırasında yalnızca görünen sayfalar ve tek bir dönüş katmanı güncellenir. Animasyonlar `requestAnimationFrame` + GPU dostu `transform` kullanır. Ağır WebGL sahnesi kullanılmaz.
+- Minimal, yumuşak buton basma geri bildirimi
+- Kısa ve engellemeyen açılış animasyonları
+- Görünüm ve sheet geçişleri yumuşatıldı
+- Yeni bölüm toast yerine listede doğal biçimde oluşur
+- Yeniden adlandırma satır içinde yapılır; silme satırı yumuşakça kapanır
+- Ana sayfadaki uzun “Çift sayfa · Gerçekçi 3D · %...” metni sade rozetlere ayrıldı
+- %70–130 sayfa ölçeği sayfa kapasitesini artık belirgin şekilde değiştirir
+- Slider sırasında sayfalama debounce ile canlı güncellenir
+- Yazarken bölüm listesini her tuşta yeniden çizme kaldırıldı
+- Sayfa sürükleme geometri ölçümleri pointerdown anında cache edilir
+- Flip CSS değişkenleri tüm document yerine kitap alt ağacında güncellenir
+- Düşük kaynaklı telefonlarda adaptif performans modu
+- roman_atolyesi_v1 verisi korunur

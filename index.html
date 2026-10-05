@@ -74,8 +74,15 @@
           <strong id="totalWords">0 kelime</strong>
           <small id="chapterCount">1 bölüm</small>
         </article>
-        <article class="dashboard-card wide">
-          <div><span>Kitap görünümü</span><strong id="homeReaderMode">Tek sayfa · Gerçekçi 3D</strong></div>
+        <article class="dashboard-card wide reader-summary-card">
+          <div class="reader-summary-copy">
+            <span>Kitap görünümü</span>
+            <div class="reader-status-chips" aria-label="Kitap görünümü ayar özeti">
+              <b id="homeLayoutBadge">Tek sayfa</b>
+              <b id="homeFlipBadge">Gerçekçi</b>
+              <b id="homeScaleBadge">%100</b>
+            </div>
+          </div>
           <button id="homeAppearanceBtn" class="mini-btn">Aa Ayarla</button>
         </article>
       </div>
@@ -174,9 +181,9 @@
       </div>
 
       <div class="setting-block">
-        <label for="pageScale">Kitap sayfası yoğunluğu <span id="pageScaleValue">%100</span></label>
+        <label for="pageScale">Sayfa içeriği ölçeği <span id="pageScaleValue">%100</span></label>
         <input id="pageScale" type="range" min="70" max="130" value="100" step="1">
-        <small class="setting-note">%80 daha çok kelime sığdırır; %120 daha büyük ve ferah görünür. Her yüzde seçilebilir.</small>
+        <small class="setting-note">%80 metni ve boşlukları küçültür, sayfaya belirgin biçimde daha fazla kelime sığdırır. %120–130 daha büyük ve ferah görünür.</small>
       </div>
 
       <div class="setting-block">

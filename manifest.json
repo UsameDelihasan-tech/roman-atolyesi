@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Roman Atölyesi",
   "short_name": "Roman",
-  "description": "3D sayfa çevirme, kağıt dokuları ve çevrimdışı yazma özellikli roman atölyesi.",
+  "description": "Fiziksel kitap hissi, dinamik sayfa çevirme, kapak, dokular ve zengin seslerle çevrimdışı roman yazma uygulaması.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -10,11 +10,29 @@
   "theme_color": "#101116",
   "lang": "tr",
   "orientation": "any",
-  "categories": ["productivity", "books"],
+  "categories": [
+    "productivity",
+    "books"
+  ],
   "prefer_related_applications": false,
   "icons": [
-    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
-    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
-    {"src":"icon-512-maskable.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

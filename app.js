@@ -78,13 +78,20 @@ function saveNow(){
 }
 function totalWords(){return state.chapters.reduce((sum,c)=>sum+words(c.content),0);}
 function estimatedBookPages(){
-  const density=100/state.pageScale;
+  const density=Math.pow(100/state.pageScale,1.85);
   return Math.max(state.chapters.length,Math.ceil((totalWords()/285)*density)||1);
 }
 function updateBookThickness(pageCount=estimatedBookPages()){
   const px=clamp(4+pageCount*.055,4,30);
   document.documentElement.style.setProperty("--book-thickness",`${px.toFixed(1)}px`);
   document.documentElement.style.setProperty("--book-thickness-neg",`${(-px).toFixed(1)}px`);
+}
+
+function updateReaderSummary(){
+  const layout=$("#homeLayoutBadge"),flip=$("#homeFlipBadge"),scale=$("#homeScaleBadge");
+  if(layout)layout.textContent=state.readerLayout==="single"?"Tek sayfa":"Çift sayfa";
+  if(flip)flip.textContent=state.flipStyle==="realistic"?"Gerçekçi":state.flipStyle==="soft"?"Yumuşak":"Kaydır";
+  if(scale)scale.textContent=`%${state.pageScale}`;
 }
 
 function applyAppearance(){
@@ -117,7 +124,7 @@ function applyAppearance(){
   $("#pageSoundLabel").textContent=pageSoundNames[state.pageSound]||"Yumuşak kağıt";
   $("#ambientSoundLabel").textContent=ambientNames[state.ambientSound]||"Kapalı";
   $("#paperLabel").textContent=paperNames[state.paper]||"Eski kitap";
-  $("#homeReaderMode").textContent=`${state.readerLayout==="single"?"Tek sayfa":"Çift sayfa"} · ${flipNames[state.flipStyle]||"Gerçekçi 3D"} · %${state.pageScale}`;
+  updateReaderSummary();
   $("#layoutBtn").textContent=state.readerLayout==="single"?"▣ Tek sayfa":"▥ Çift sayfa";
 
   $$('[data-mode-choice]').forEach(b=>b.classList.toggle("selected",b.dataset.modeChoice===state.mode));
@@ -152,15 +159,17 @@ function updateHome(){
   $("#chapterCount").textContent=`${state.chapters.length} bölüm`;
   $("#lastChapterTitle").textContent=c.title||"Adsız bölüm";
   $("#lastChapterWords").textContent=`${words(c.content)} kelime`;
-  $("#homeReaderMode").textContent=`${state.readerLayout==="single"?"Tek sayfa":"Çift sayfa"} · ${flipNames[state.flipStyle]||"Gerçekçi 3D"} · %${state.pageScale}`;
+  updateReaderSummary();
   updateBookThickness();
 }
 
+let newChapterAnimationId=null;
 function renderList(){
   const host=$("#chapterList");host.innerHTML="";
   state.chapters.forEach((c,i)=>{
     const row=document.createElement("div");
-    row.className="chapter-row"+(c.id===state.activeId?" active":"");
+    row.dataset.chapterId=c.id;
+    row.className="chapter-row"+(c.id===state.activeId?" active":"")+(c.id===newChapterAnimationId?" is-new":"");
     row.innerHTML=`
       <div class="chapter-info"><strong>${esc(c.title||`Bölüm ${i+1}`)}</strong><small>${words(c.content||"")} kelime</small></div>
       <button type="button" class="rename" aria-label="Bölüm adını düzenle">✎</button>
@@ -168,27 +177,51 @@ function renderList(){
     row.querySelector(".chapter-info").onclick=()=>{state.activeId=c.id;saveNow();render();closeDrawer();openView("editor");};
     row.querySelector(".rename").onclick=e=>{
       e.stopPropagation();
-      const name=prompt("Yeni bölüm adı:",c.title||`Bölüm ${i+1}`);
-      if(name===null)return;
-      const title=name.trim();
-      if(!title){showToast("Bölüm adı boş olamaz.");return;}
-      c.title=title;
-      if(state.activeId===c.id)$("#chapterTitle").value=title;
-      saveNow();renderList();updateHome();showToast("Bölüm adı değiştirildi.");
+      if(row.classList.contains("editing"))return;
+      const info=row.querySelector(".chapter-info"),strong=info.querySelector("strong");
+      const original=c.title||`Bölüm ${i+1}`;
+      const input=document.createElement("input");
+      input.className="chapter-inline-input";input.value=original;input.setAttribute("aria-label","Yeni bölüm adı");
+      strong.replaceWith(input);row.classList.add("editing");
+      requestAnimationFrame(()=>{input.focus();input.select();});
+      let finished=false;
+      const finish=(save)=>{
+        if(finished)return;finished=true;
+        const title=input.value.trim();
+        if(save&&title){
+          c.title=title;
+          if(state.activeId===c.id)$("#chapterTitle").value=title;
+          saveNow();updateHome();
+          row.classList.add("rename-saved");
+          setTimeout(()=>row.classList.remove("rename-saved"),420);
+        }
+        renderList();
+      };
+      input.addEventListener("keydown",ev=>{
+        if(ev.key==="Enter"){ev.preventDefault();finish(true);}
+        if(ev.key==="Escape"){ev.preventDefault();finish(false);}
+      });
+      input.addEventListener("blur",()=>finish(true),{once:true});
     };
     row.querySelector(".delete").onclick=e=>{
       e.stopPropagation();
       if(state.chapters.length===1){showToast("En az bir bölüm kalmalı.");return;}
       if(confirm(`"${c.title}" silinsin mi?`)){
-        state.chapters=state.chapters.filter(x=>x.id!==c.id);
-        if(state.activeId===c.id)state.activeId=state.chapters[0].id;
-        saveNow();render();
+        row.classList.add("is-removing");
+        setTimeout(()=>{
+          state.chapters=state.chapters.filter(x=>x.id!==c.id);
+          if(state.activeId===c.id)state.activeId=state.chapters[0].id;
+          saveNow();render();
+        },180);
       }
     };
     host.appendChild(row);
   });
+  if(newChapterAnimationId){
+    const row=host.querySelector(`[data-chapter-id="${CSS.escape(newChapterAnimationId)}"]`);
+    if(row)requestAnimationFrame(()=>row.scrollIntoView({block:"nearest",behavior:"smooth"}));
+  }
 }
-
 function render(){
   applyAppearance();
   $("#bookTitle").value=state.bookTitle||"Adsız Roman";
@@ -201,30 +234,44 @@ function showToast(s){
   const x=$("#toast");x.textContent=s;x.classList.add("show");
   clearTimeout(showToast.t);showToast.t=setTimeout(()=>x.classList.remove("show"),1700);
 }
-function openDrawer(){$("#drawer").classList.add("open");$("#scrim").classList.add("show");}
+function openDrawer(){renderList();$("#drawer").classList.add("open");$("#scrim").classList.add("show");}
 function closeDrawer(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("show");}
 function openSheet(id){$(id).classList.add("show");}
 function closeSheets(){$$(".sheet").forEach(x=>x.classList.remove("show"));}
 
 function openView(name){
+  const selector=name==="home"?"#homeView":name==="editor"?"#editorView":"#readerView";
+  const next=$(selector),current=document.querySelector(".view.active");
+  if(current===next){if(name==="reader"){buildReaderPages();renderReader();}return;}
   $$(".view").forEach(v=>v.classList.remove("active"));
   $$(".bottom-nav [data-view-target]").forEach(b=>b.classList.remove("active"));
-  const view=name==="home"?"#homeView":name==="editor"?"#editorView":"#readerView";
-  $(view).classList.add("active");
+  next.classList.add("active");
+  next.classList.remove("view-reveal");void next.offsetWidth;next.classList.add("view-reveal");
   const tab=$(`.bottom-nav [data-view-target="${name}"]`);if(tab)tab.classList.add("active");
   if(name==="reader"){buildReaderPages();renderReader();}
   if(name==="home")updateHome();
-  window.scrollTo({top:0,behavior:"smooth"});
+  window.scrollTo(0,0);
 }
 
 $("#bookTitle").oninput=e=>{state.bookTitle=e.target.value;$("#coverTitle").textContent=state.bookTitle||"Adsız Roman";saveSoon();};
-$("#chapterTitle").oninput=e=>{active().title=e.target.value;saveSoon();renderList();updateHome();};
-$("#editor").oninput=e=>{active().content=e.target.value;saveSoon();updateStats();renderList();updateHome();};
+let editorMetricsTimer=0;
+function scheduleEditorMetrics(){
+  clearTimeout(editorMetricsTimer);
+  editorMetricsTimer=setTimeout(()=>updateStats(),90);
+}
+$("#chapterTitle").oninput=e=>{active().title=e.target.value;saveSoon();};
+$("#editor").oninput=e=>{active().content=e.target.value;saveSoon();scheduleEditorMetrics();};
 $("#homeBtn").onclick=()=>openView("home");
 $("#chaptersBtn").onclick=openDrawer;$("#closeDrawer").onclick=closeDrawer;$("#scrim").onclick=closeDrawer;
 $("#newChapter").onclick=()=>{
-  const id="c_"+Date.now();state.chapters.push({id,title:`Bölüm ${state.chapters.length+1}`,content:""});
-  state.activeId=id;saveNow();render();closeDrawer();openView("editor");setTimeout(()=>$("#editor").focus(),120);
+  const id="c_"+Date.now();
+  state.chapters.push({id,title:`Bölüm ${state.chapters.length+1}`,content:""});
+  state.activeId=id;newChapterAnimationId=id;saveNow();render();
+  setTimeout(()=>{
+    newChapterAnimationId=null;
+    closeDrawer();openView("editor");
+    requestAnimationFrame(()=>$("#chapterTitle").focus());
+  },420);
 };
 $("#focusBtn").onclick=()=>{document.body.classList.toggle("focus");showToast(document.body.classList.contains("focus")?"Odak modu açık.":"Odak modu kapalı.");};
 $("#modeBtn").onclick=()=>{state.mode=state.mode==="night"?"day":"night";saveNow();applyAppearance();};
@@ -246,12 +293,21 @@ $$("[data-font]").forEach(b=>b.onclick=()=>{state.font=b.dataset.font;saveNow();
 $$("[data-ambience]").forEach(b=>b.onclick=()=>{state.ambience=b.dataset.ambience;saveNow();applyAppearance();});
 $("#fontSize").oninput=e=>{state.fontSize=Number(e.target.value);$("#fontSizeValue").textContent=`${state.fontSize} px`;document.documentElement.style.setProperty("--book-font-size",`${state.fontSize}px`);};
 $("#fontSize").onchange=()=>{saveNow();if($("#readerView").classList.contains("active")){buildReaderPages();renderReader();}};
+let repaginateTimer=0;
+function scheduleRepaginate(delay=90){
+  clearTimeout(repaginateTimer);
+  repaginateTimer=setTimeout(()=>{
+    buildReaderPages();
+    if($("#readerView").classList.contains("active"))renderReader();
+  },delay);
+}
 $("#pageScale").oninput=e=>{
   state.pageScale=clamp(Number(e.target.value)||100,70,130);
   $("#pageScaleValue").textContent=`%${state.pageScale}`;
-  applyAppearance();updateBookThickness();
+  applyAppearance();updateBookThickness();updateReaderSummary();
+  scheduleRepaginate(75);
 };
-$("#pageScale").onchange=()=>{saveNow();buildReaderPages();if($("#readerView").classList.contains("active"))renderReader();updateHome();};
+$("#pageScale").onchange=()=>{saveNow();scheduleRepaginate(0);updateHome();};
 $$('[data-cover-fit]').forEach(b=>b.onclick=()=>{state.coverFit=b.dataset.coverFit;saveNow();applyAppearance();applyCoverVisual();});
 $$('[data-cover-text]').forEach(b=>b.onclick=()=>{state.coverText=b.dataset.coverText==="on";saveNow();applyAppearance();});
 $("#layoutBtn").onclick=()=>{state.readerLayout=state.readerLayout==="single"?"spread":"single";saveNow();applyAppearance();buildReaderPages();renderReader();};
@@ -263,22 +319,23 @@ let resizeTimer;
 
 function charsPerPage(){
   const w=window.innerWidth;
-  const effectiveFont=state.fontSize*(state.pageScale/100);
-  const densityBoost=100/state.pageScale;
+  const scale=clamp(state.pageScale/100,.70,1.30);
+  const densityFactor=Math.pow(1/scale,2.05);
   if(state.readerLayout==="spread"){
     const pageWidth=Math.min(w*.48,490);
     const pageHeight=Math.min(window.innerHeight*.72,760);
     const mobileFactor=w<600?.82:1;
-    const f=effectiveFont*mobileFactor;
-    const charsPerLine=Math.max(24,pageWidth/(f*.54));
-    const lines=Math.max(15,pageHeight/(f*1.68)-4);
-    return Math.max(430,Math.floor(charsPerLine*lines*.94*densityBoost*.46+charsPerLine*lines*.54));
+    const baseFont=state.fontSize*mobileFactor;
+    const charsPerLine=Math.max(24,pageWidth/(baseFont*.54));
+    const lines=Math.max(15,pageHeight/(baseFont*1.68)-4);
+    return Math.max(300,Math.floor(charsPerLine*lines*.92*densityFactor));
   }
   const pageWidth=Math.min(w*.92,650);
   const pageHeight=Math.min(window.innerHeight*.72,760);
-  const charsPerLine=Math.max(30,pageWidth/(effectiveFont*.54));
-  const lines=Math.max(17,pageHeight/(effectiveFont*1.70)-4);
-  return Math.max(620,Math.floor(charsPerLine*lines*.94));
+  const baseFont=state.fontSize;
+  const charsPerLine=Math.max(30,pageWidth/(baseFont*.54));
+  const lines=Math.max(17,pageHeight/(baseFont*1.70)-4);
+  return Math.max(420,Math.floor(charsPerLine*lines*.94*densityFactor));
 }
 function splitIntoPages(text,limit){
   const clean=(text||"").trim();if(!clean)return[""];
@@ -332,7 +389,7 @@ function currentVisibleChapter(){
   const l=spreadLeftIndex(),r=l+1;return(readerPages[r]||readerPages[l])?.chapterTitle||"Bölüm";
 }
 function renderReader(){
-  resetFlip(true);
+  resetFlip(false);
   applyAppearance();
   const left=$("#leftPage"),right=$("#rightPage");
   if(state.readerLayout==="single"){
@@ -352,7 +409,7 @@ function renderReader(){
 const flipState={
   active:false,prepared:false,pointerId:null,startX:0,startY:0,lastX:0,lastY:0,lastTime:0,
   velocityX:0,velocityY:0,dir:0,progress:0,targetProgress:0,raf:0,commitIndex:0,
-  grabY:.5,dragY:0,releaseSpeed:0
+  grabY:.5,dragY:0,releaseSpeed:0,rectW:0,rectH:0,rectLeft:0,rectTop:0
 };
 function canTurn(dir){
   if(state.readerLayout==="single")return dir>0?readerIndex<readerPages.length-1:readerIndex>0;
@@ -364,7 +421,7 @@ function updateFlipOrigin(){
   const flip=$("#flipPage");
   const x=flipState.dir>0?0:100;
   flip.style.transformOrigin=`${x}% ${(flipState.grabY*100).toFixed(1)}%`;
-  document.documentElement.style.setProperty("--grab-y",`${(flipState.grabY*100).toFixed(1)}%`);
+  $("#readerBook").style.setProperty("--grab-y",`${(flipState.grabY*100).toFixed(1)}%`);
 }
 function prepareFlip(dir){
   const book=$("#readerBook"),flip=$("#flipPage"),front=$("#flipFront"),back=$("#flipBack");
@@ -397,8 +454,7 @@ function prepareFlip(dir){
 }
 function transformFor(progress,dir){
   const p=clamp(progress,0,1);
-  const rect=$("#readerBook").getBoundingClientRect();
-  const dyNorm=clamp(flipState.dragY/Math.max(220,rect.height*.65),-1,1);
+  const dyNorm=clamp(flipState.dragY/Math.max(220,flipState.rectH*.65),-1,1);
   const corner=(flipState.grabY-.5)*2;
   if(state.flipStyle==="slide"){
     const x=(dir>0?-1:1)*p*104;
@@ -421,14 +477,15 @@ function paintFlip(){
   flipState.raf=0;
   const p=flipState.targetProgress;
   flipState.progress=p;
-  document.documentElement.style.setProperty("--flip-progress",p.toFixed(3));
+  const book=$("#readerBook");
+  book.style.setProperty("--flip-progress",p.toFixed(3));
   const light=Math.sin(Math.PI*p);
-  document.documentElement.style.setProperty("--flip-light",light.toFixed(3));
-  document.documentElement.style.setProperty("--flip-opacity",(light*.58).toFixed(3));
-  document.documentElement.style.setProperty("--flip-overlay",(light*.30).toFixed(3));
+  book.style.setProperty("--flip-light",light.toFixed(3));
+  book.style.setProperty("--flip-opacity",(light*.52).toFixed(3));
+  book.style.setProperty("--flip-overlay",(light*.24).toFixed(3));
   const shadeX=flipState.dir>0?100-p*78:p*78;
-  document.documentElement.style.setProperty("--shade-x",`${shadeX.toFixed(1)}%`);
-  document.documentElement.style.setProperty("--flip-dy",flipState.dragY.toFixed(1));
+  book.style.setProperty("--shade-x",`${shadeX.toFixed(1)}%`);
+  book.style.setProperty("--flip-dy",flipState.dragY.toFixed(1));
   $("#flipPage").style.transform=transformFor(p,flipState.dir);
 }
 function queueFlipPaint(p){
@@ -439,12 +496,12 @@ function resetFlip(restore=false){
   const book=$("#readerBook"),flip=$("#flipPage");
   book.classList.remove("dragging","settling");
   flip.className="flip-page";flip.style.transform="";flip.style.transformOrigin="";
-  document.documentElement.style.setProperty("--flip-progress",0);
-  document.documentElement.style.setProperty("--flip-light",0);
-  document.documentElement.style.setProperty("--flip-opacity",0);
-  document.documentElement.style.setProperty("--flip-overlay",0);
-  document.documentElement.style.setProperty("--grab-y","50%");
-  document.documentElement.style.setProperty("--shade-x","50%");
+  book.style.setProperty("--flip-progress",0);
+  book.style.setProperty("--flip-light",0);
+  book.style.setProperty("--flip-opacity",0);
+  book.style.setProperty("--flip-overlay",0);
+  book.style.setProperty("--grab-y","50%");
+  book.style.setProperty("--shade-x","50%");
   flipState.active=false;flipState.prepared=false;flipState.dir=0;flipState.progress=0;flipState.targetProgress=0;flipState.dragY=0;flipState.releaseSpeed=0;
   if(restore&&readerPages.length)renderStaticOnly();
 }
@@ -463,7 +520,7 @@ function finishFlip(commit){
   if(!flipState.prepared){resetFlip(false);return;}
   const book=$("#readerBook");
   const duration=settleDuration(commit);
-  document.documentElement.style.setProperty("--settle-ms",`${duration}ms`);
+  book.style.setProperty("--settle-ms",`${duration}ms`);
   book.classList.remove("dragging");book.classList.add("settling");
   if(commit)playPageTurnSound(state.pageSound,Math.abs(flipState.releaseSpeed),flipState.grabY);
   queueFlipPaint(commit?1:0);
@@ -476,6 +533,7 @@ function beginPointer(e){
   if(flipState.active)return;
   if(state.pageSound!=="off")ensureAudio();
   const book=$("#readerBook"),rect=book.getBoundingClientRect();
+  flipState.rectW=rect.width;flipState.rectH=rect.height;flipState.rectLeft=rect.left;flipState.rectTop=rect.top;
   const localX=e.clientX-rect.left;
   let dir=0;
   if(state.readerLayout==="spread")dir=localX>=rect.width/2?1:-1;
@@ -499,9 +557,7 @@ function movePointer(e){
   const correct=flipState.dir>0?-dx:dx;
   if(correct<=0){queueFlipPaint(0);return;}
   if(!flipState.prepared)prepareFlip(flipState.dir);
-  updateFlipOrigin();
-  const rect=$("#readerBook").getBoundingClientRect();
-  const width=rect.width*(state.readerLayout==="spread"?.48:.86);
+  const width=flipState.rectW*(state.readerLayout==="spread"?.48:.86);
   const diagonalAssist=Math.abs(dy)*.11;
   queueFlipPaint((correct+diagonalAssist)/Math.max(170,width));
   if(e.cancelable)e.preventDefault();
@@ -794,7 +850,21 @@ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredIns
 installBtn.addEventListener("click",async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();const choice=await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installBtn.hidden=true;if(choice.outcome==="accepted")showToast("Roman Atölyesi kuruluyor…");}else showToast("Chrome menüsünden “Uygulamayı yükle” seç.");});
 window.addEventListener("appinstalled",()=>{installBtn.hidden=true;showToast("Roman Atölyesi kuruldu.");});
 
+/* ---------- v6 mikro-etkileşimler ve adaptif performans ---------- */
+const lowEndDevice=((navigator.deviceMemory&&navigator.deviceMemory<=4)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4));
+document.documentElement.classList.toggle("perf-lite",!!lowEndDevice);
+
+document.addEventListener("pointerdown",e=>{
+  const button=e.target.closest?.("button");
+  if(button&&!button.disabled)button.classList.add("pressed");
+},{passive:true});
+["pointerup","pointercancel","pointerout"].forEach(type=>document.addEventListener(type,e=>{
+  const button=e.target.closest?.("button");
+  if(button)button.classList.remove("pressed");
+},{passive:true}));
+
 render();buildReaderPages();openView("home");loadCover();
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.add("app-ready")));
 
 if("serviceWorker" in navigator){
   let refreshing=false;
