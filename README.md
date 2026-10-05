@@ -1,25 +1,21 @@
-# Roman Atölyesi v4 — Fiziksel Kitap Motoru
+# Roman Atölyesi v5 — Fiziksel Kitap Motoru
 
-Bu sürüm v3 üzerindeki mevcut roman verisini ve `roman_atolyesi_v1` localStorage anahtarını korur.
+Telefon için çevrimdışı çalışan PWA roman yazma ve okuma uygulaması.
 
-## Yeni özellikler
-- Parmağı takip eden gerçek zamanlı 3D sayfa sürükleme
-- Tek sayfa ve çift sayfalı açık kitap düzeni
-- Sayfa numarası her kağıdın altında
-- Gerçekçi 3D, yumuşak 3D ve düşük maliyetli kaydırma animasyonu
-- Fildişi, parşömen, gazete, eski kitap, gece mürekkebi ve temiz kağıt dokuları
-- Hafif tekrar eden `paper-grain.png` ile fiziksel kağıt hissi
-- Daktilo, kurşun kalem ve mürekkep/dolma kalem yazma sesleri
-- Yazma sesi ve ambiyans için ayrı ses seviyeleri
-- Gündüz/gece, font, boyut, atmosfer ayarları korunur
-- Bölüm yeniden adlandırma korunur
-- İnternetsiz çalışma korunur
+## v5 yenilikleri
+- Parmağın başlangıç köşesini ve çapraz hareketini izleyen gerçek zamanlı 3D sayfa dönüşü
+- Sayfa dönüşünde yumuşak kağıt / yeni kağıt / parşömen / kumaş sesleri
+- Düşük yoruculuklu yeni WebAudio motoru ve limiter/compressor
+- 12 farklı yazma sesi: daktilo, keçe tuş, kalem, dolma kalem, tüy kalem, fırça, bubble, damla, soft tap, cam tık, tebeşir ve sessiz
+- 16 ambiyans: iki yağmur, şömine, kütüphane, kafe, orman, gece, okyanus, tren, rüzgar, plak, saat, brown/pink noise, kar ve sessiz
+- Yazma, sayfa ve ambiyans sesleri açılır sembollü listeler halinde
+- Kitap sayfası yoğunluğu %70–130 arasında her yüzde ayarlanabilir
+- 15 kağıt/yüzey dokusu; kırışık kağıt, kar, kadife, kilim, keten, kraft, mermer, deri ve pirinç kağıdı dahil
+- Cihaza özel kapak görseli ekleme; IndexedDB'de çevrimdışı saklanır
+- Sayfa sayısı arttıkça kapak ve kitap gövdesi görsel olarak kalınlaşır
+- Tek sayfa ve çift sayfa kitap düzenleri korunur
+- Roman verileri yine `roman_atolyesi_v1` anahtarında tutulur; mevcut metinler korunur
+- PWA önbelleği v5'e yükseltildi ve tüm doku dosyaları çevrimdışı önbelleğe alınır
 
-## Performans yaklaşımı
-- Harici animasyon kütüphanesi yok
-- Aynı anda yalnızca görünen 1–2 sayfa ve tek bir çevirme katmanı DOM'da tutulur
-- Sürükleme `requestAnimationFrame` ile CSS transform üzerinden yapılır
-- Sayfa dokusu 96×96 küçük tekrar eden PNG'dir
-- Sesler dosya oynatmak yerine WebAudio ile kısa süreli sentezlenir
-- `prefers-reduced-motion` desteği vardır
-- Kaydır animasyonu düşük güçlü cihazlar için en hafif moddur
+## Performans
+Sayfa sürükleme sırasında yalnızca görünen sayfalar ve tek bir dönüş katmanı güncellenir. Animasyonlar `requestAnimationFrame` + GPU dostu `transform` kullanır. Ağır WebGL sahnesi kullanılmaz.

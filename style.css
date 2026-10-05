@@ -59,3 +59,150 @@ body.focus .topbar,body.focus .bottom-nav,body.focus .editor-toolbar{opacity:.07
 @media(max-width:430px){.book-hero{grid-template-columns:1fr;justify-items:center;text-align:center}.book-cover{width:155px}.hero-copy{width:100%}.dashboard-grid{margin-top:4px}.page-inner{padding:22px 20px 15px}.page-body{line-height:1.7}.reader-book.layout-spread{width:98vw;height:min(62dvh,610px)}}
 @media(min-width:800px){.home-wrap{padding-top:45px}.editor-shell{padding:40px 54px}.reader-wrap{padding-top:25px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.reader-book.settling .flip-page{transition-duration:90ms!important}.book-cover{transform:none}.ambient-bg{transition:none}}
+
+/* ===== v5: ultra-dinamik kitap, yoğunluk, kapak, geniş ses listeleri ===== */
+:root{
+  --texture-image:none;
+  --reader-font-size:19px;
+  --reader-heading-size:23px;
+  --page-pad-x:28px;
+  --page-pad-y:25px;
+  --book-thickness:5px;
+  --grab-y:50%;
+  --shade-x:50%;
+  --flip-dy:0;
+  --cover-fit:cover;
+}
+body[data-paper="ivory"]{--texture-image:none}
+body[data-paper="parchment"]{--texture-image:none}
+body[data-paper="newsprint"]{--texture-image:none}
+body[data-paper="antique"]{--texture-image:none}
+body[data-paper="nightink"]{--texture-image:none}
+body[data-paper="clean"]{--texture-image:none}
+body[data-paper="wrinkle"]{--paper:#e8dcc2;--paper-text:#2f281e;--paper-edge:#b9a37d;--paper-pattern:linear-gradient(110deg,rgba(85,60,30,.04),transparent 30%,rgba(255,255,255,.08) 51%,transparent 72%);--texture-image:url("texture-wrinkle.png")}
+body[data-paper="snow"]{--paper:#f2f6f7;--paper-text:#263238;--paper-edge:#c4d0d5;--paper-pattern:linear-gradient(145deg,rgba(184,204,214,.06),transparent 60%);--texture-image:url("texture-snow.png")}
+body[data-paper="velvet"]{--paper:#5d3440;--paper-text:#f2e8df;--paper-edge:#3e2028;--paper-pattern:radial-gradient(circle at 70% 15%,rgba(255,255,255,.04),transparent 34%);--texture-image:url("texture-velvet.png")}
+body[data-paper="kilim"]{--paper:#d2bea0;--paper-text:#322a20;--paper-edge:#9f805e;--paper-pattern:linear-gradient(rgba(255,255,255,.08),rgba(255,255,255,.08));--texture-image:url("texture-kilim.png")}
+body[data-paper="linen"]{--paper:#e1d9c7;--paper-text:#302b24;--paper-edge:#bcb19a;--paper-pattern:linear-gradient(120deg,rgba(255,255,255,.07),transparent 50%);--texture-image:url("texture-linen.png")}
+body[data-paper="kraft"]{--paper:#ba9a6f;--paper-text:#2d2419;--paper-edge:#8b6e49;--paper-pattern:radial-gradient(circle at 20% 12%,rgba(255,255,255,.05),transparent 26%);--texture-image:url("texture-kraft.png")}
+body[data-paper="marble"]{--paper:#ebe9e2;--paper-text:#292827;--paper-edge:#c4c1b9;--paper-pattern:linear-gradient(130deg,rgba(255,255,255,.09),transparent 55%);--texture-image:url("texture-marble.png")}
+body[data-paper="leather"]{--paper:#66462f;--paper-text:#f1e5d2;--paper-edge:#3d2a1c;--paper-pattern:radial-gradient(circle at 22% 15%,rgba(255,255,255,.04),transparent 30%);--texture-image:url("texture-leather.png")}
+body[data-paper="rice"]{--paper:#efe8d3;--paper-text:#302d26;--paper-edge:#c3b796;--paper-pattern:linear-gradient(90deg,rgba(255,255,255,.04),transparent 60%);--texture-image:url("texture-rice.png")}
+.paper-surface{
+  background-image:var(--texture-image),url("paper-grain.png"),var(--paper-pattern);
+  background-repeat:repeat,repeat,no-repeat;
+  background-size:128px 128px,96px 96px,cover;
+  background-blend-mode:soft-light,multiply,normal;
+}
+
+/* Kapak görseli ve fiziksel kitap kalınlığı */
+.book-cover{overflow:visible;z-index:1}
+.cover-image-layer{
+  position:absolute;inset:0;border-radius:inherit;z-index:-1;opacity:0;
+  background-position:center;background-repeat:no-repeat;background-size:var(--cover-fit);
+  transition:opacity .2s ease;
+}
+.book-cover.has-cover .cover-image-layer{opacity:1}
+.book-cover.has-cover::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;z-index:-.5;
+  background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.38));pointer-events:none
+}
+.book-cover.cover-text-off .cover-kicker,
+.book-cover.cover-text-off h1,
+.book-cover.cover-text-off .cover-rule,
+.book-cover.cover-text-off>p{opacity:0;pointer-events:none}
+.cover-paper-stack{
+  position:absolute;top:7px;bottom:7px;right:calc(-1 * var(--book-thickness));width:var(--book-thickness);
+  border-radius:0 5px 5px 0;z-index:-3;
+  background:repeating-linear-gradient(90deg,#d8ccb5 0 1px,#b8a98e 1px 2px,#eee4d2 2px 3px);
+  box-shadow:4px 3px 12px rgba(0,0,0,.22);transform:skewY(-3deg)
+}
+.book-cover::after{
+  content:"";position:absolute;left:10px;right:calc(-1 * var(--book-thickness));bottom:calc(-1 * var(--book-thickness));height:var(--book-thickness);
+  border-radius:0 0 8px 5px;z-index:-4;background:repeating-linear-gradient(0deg,#d9cdb8 0 1px,#a99679 1px 2px,#eee3d0 2px 3px);
+  box-shadow:2px 5px 10px rgba(0,0,0,.18)
+}
+.book-thickness{
+  position:absolute;left:3%;right:3%;bottom:calc(-1 * var(--book-thickness));height:var(--book-thickness);z-index:-1;
+  border-radius:0 0 13px 13px;background:repeating-linear-gradient(0deg,#e7dcc8 0 1px,#b9aa8f 1px 2px,#f2eadb 2px 3px);
+  box-shadow:0 12px 24px rgba(0,0,0,.22);transform:translateZ(-10px)
+}
+.book-backboard{bottom:calc(-12px - var(--book-thickness) * .18)}
+
+/* Okuma yoğunluğu yüzde bazlıdır. Değerler JS tarafından px olarak güncellenir. */
+.page-inner{padding:var(--page-pad-y) var(--page-pad-x) 18px}
+.page-content h2{font-size:var(--reader-heading-size)}
+.page-body{font-size:var(--reader-font-size);line-height:1.72}
+
+/* Köşeden / çapraz yakalamayı hissettiren ışık ve kıvrım */
+.reader-book{touch-action:none;will-change:auto}
+.flip-page{backface-visibility:hidden;contain:layout paint style}
+.flip-page::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:30;border-radius:inherit;
+  opacity:calc(var(--flip-light) * .30);
+  background:radial-gradient(circle at var(--shade-x) var(--grab-y),rgba(255,255,255,.38),transparent 26%),
+             linear-gradient(90deg,rgba(0,0,0,.18),transparent 22%,rgba(255,255,255,.10) 52%,transparent 78%);
+  mix-blend-mode:soft-light
+}
+.flip-shade{
+  background:radial-gradient(ellipse at var(--shade-x) var(--grab-y),rgba(0,0,0,.30),rgba(0,0,0,.10) 28%,transparent 64%)!important;
+  opacity:calc(var(--flip-light) * .58)
+}
+.reader-book.settling .flip-page{transition:transform var(--settle-ms,185ms) cubic-bezier(.2,.78,.18,1),filter var(--settle-ms,185ms) ease!important}
+.reader-book.flip-soft.settling .flip-page{transition-duration:var(--settle-ms,155ms)!important}
+.reader-book.flip-slide.settling .flip-page{transition-duration:var(--settle-ms,125ms)!important}
+
+/* Liste biçimli ayarlar */
+.option-dropdown,.sound-dropdown{
+  border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden;margin-top:9px
+}
+.option-dropdown summary,.sound-dropdown summary{
+  list-style:none;display:grid;grid-template-columns:36px 1fr 24px;gap:8px;align-items:center;padding:13px 12px;cursor:pointer
+}
+.option-dropdown summary::-webkit-details-marker,.sound-dropdown summary::-webkit-details-marker{display:none}
+.summary-icon{font-size:20px;display:grid;place-items:center}
+.option-dropdown summary b,.sound-dropdown summary b{display:block;font-size:13px;color:var(--text)}
+.option-dropdown summary small,.sound-dropdown summary small{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.option-dropdown summary i,.sound-dropdown summary i{font-style:normal;color:var(--muted);transition:transform .16s ease}
+.option-dropdown[open] summary i,.sound-dropdown[open] summary i{transform:rotate(180deg)}
+.option-list{display:grid;gap:6px;padding:0 8px 9px;max-height:48dvh;overflow:auto}
+.option-list button{
+  width:100%;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--panel) 78%,transparent);color:var(--text);
+  display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto;gap:0 8px;text-align:left;padding:10px
+}
+.option-list button>span{grid-row:1/3;font-size:20px;align-self:center;text-align:center}
+.option-list button>b{font-size:12px;line-height:1.2}
+.option-list button>small{font-size:9px;color:var(--muted);margin-top:2px}
+.option-list button.selected{outline:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.sound-dropdown .volume{padding:0 12px 13px;margin-top:7px}
+
+/* Kapak düzenleyici */
+.cover-preview{
+  margin-top:16px;min-height:250px;aspect-ratio:2/3;max-width:210px;margin-inline:auto;border-radius:8px 18px 18px 8px;
+  border:1px solid var(--line);background:linear-gradient(145deg,#493426,#201714);background-position:center;background-repeat:no-repeat;background-size:cover;
+  display:grid;place-items:center;text-align:center;color:#d9cdbd;padding:20px;box-shadow:13px 18px 34px rgba(0,0,0,.24)
+}
+.cover-preview.has-image span{display:none}
+.cover-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
+.cover-actions button{border-radius:14px;padding:12px;border:1px solid var(--line);font-weight:700}
+
+/* Slider dokunma alanları */
+#pageScale,#fontSize,#typingVolume,#pageSoundVolume,#volume{min-height:32px}
+
+@media(max-width:600px){
+  .layout-spread .page-body{font-size:calc(var(--reader-font-size) * .82);line-height:1.58}
+  .layout-spread .page-inner{padding:calc(var(--page-pad-y) * .8) calc(var(--page-pad-x) * .55) 14px}
+}
+
+.book-cover .cover-image-layer{z-index:0}
+.book-cover.has-cover::before{z-index:1}
+.book-cover .cover-spine,.book-cover .cover-kicker,.book-cover h1,.book-cover .cover-rule,.book-cover>p{position:relative;z-index:2}
+
+:root{--book-thickness-neg:-5px;--reader-font-size-spread:15.6px;--page-pad-x-spread:14px;--page-pad-y-spread:20px;--flip-opacity:0;--flip-overlay:0;--settle-ms:185ms}
+.cover-paper-stack{right:var(--book-thickness-neg)}
+.book-cover::after{right:var(--book-thickness-neg);bottom:var(--book-thickness-neg)}
+.book-thickness{bottom:var(--book-thickness-neg)}
+.book-backboard{bottom:calc(-12px - var(--book-thickness))}
+.flip-page::after{opacity:var(--flip-overlay,0)}
+.flip-shade{opacity:var(--flip-opacity,0)!important}
+@media(max-width:600px){.layout-spread .page-body{font-size:var(--reader-font-size-spread);line-height:1.58}.layout-spread .page-inner{padding:var(--page-pad-y-spread) var(--page-pad-x-spread) 14px}}

@@ -43,6 +43,8 @@
     <div class="home-wrap">
       <div class="book-hero">
         <div class="book-cover" id="bookCover">
+          <div id="coverImageLayer" class="cover-image-layer" aria-hidden="true"></div>
+          <div class="cover-paper-stack" aria-hidden="true"></div>
           <div class="cover-spine"></div>
           <span class="cover-kicker">ROMAN</span>
           <h1 id="coverTitle">Adsız Roman</h1>
@@ -56,6 +58,7 @@
           <div class="hero-actions">
             <button id="continueBtn" class="primary">✎ Yazmaya devam et</button>
             <button id="readBookBtn" class="secondary">☷ Kitap gibi oku</button>
+            <button id="coverBtn" class="secondary">▣ Kapak</button>
           </div>
         </div>
       </div>
@@ -105,6 +108,7 @@
 
       <div id="bookStage" class="book-stage">
         <div id="readerBook" class="reader-book layout-single flip-realistic" aria-label="Kitap okuma alanı">
+          <div id="bookThickness" class="book-thickness" aria-hidden="true"></div>
           <div class="book-backboard" aria-hidden="true"></div>
           <div class="book-gutter" aria-hidden="true"></div>
           <article id="leftPage" class="paper-page page-left paper-surface" aria-hidden="true"></article>
@@ -170,15 +174,33 @@
       </div>
 
       <div class="setting-block">
-        <label>Kağıt dokusu</label>
-        <div class="texture-grid">
-          <button data-paper="ivory">Fildişi</button>
-          <button data-paper="parchment">Parşömen</button>
-          <button data-paper="newsprint">Gazete</button>
-          <button data-paper="antique">Eski kitap</button>
-          <button data-paper="nightink">Gece mürekkebi</button>
-          <button data-paper="clean">Temiz</button>
-        </div>
+        <label for="pageScale">Kitap sayfası yoğunluğu <span id="pageScaleValue">%100</span></label>
+        <input id="pageScale" type="range" min="70" max="130" value="100" step="1">
+        <small class="setting-note">%80 daha çok kelime sığdırır; %120 daha büyük ve ferah görünür. Her yüzde seçilebilir.</small>
+      </div>
+
+      <div class="setting-block">
+        <label>Kağıt / yüzey dokusu</label>
+        <details class="option-dropdown">
+          <summary><span class="summary-icon">▧</span><span><b id="paperLabel">Eski kitap</b><small>15 farklı yüzey</small></span><i>⌄</i></summary>
+          <div class="option-list texture-list">
+            <button data-paper="ivory"><span>📄</span><b>Fildişi</b><small>Yumuşak klasik kağıt</small></button>
+            <button data-paper="parchment"><span>📜</span><b>Parşömen</b><small>Sıcak, eski yüzey</small></button>
+            <button data-paper="newsprint"><span>📰</span><b>Gazete</b><small>Mat ve ince baskı</small></button>
+            <button data-paper="antique"><span>📖</span><b>Eski kitap</b><small>Yaşlanmış sayfa</small></button>
+            <button data-paper="nightink"><span>🌑</span><b>Gece mürekkebi</b><small>Koyu, sıcak ton</small></button>
+            <button data-paper="clean"><span>□</span><b>Temiz</b><small>Düz beyaz sayfa</small></button>
+            <button data-paper="wrinkle"><span>〰</span><b>Kırışık kağıt</b><small>Kat izleri ve lifler</small></button>
+            <button data-paper="snow"><span>❄</span><b>Kar</b><small>Soğuk beyaz kristal doku</small></button>
+            <button data-paper="velvet"><span>◆</span><b>Kadife</b><small>Yumuşak kumaş yüzeyi</small></button>
+            <button data-paper="kilim"><span>◇</span><b>Kilim</b><small>Hafif geometrik dokuma</small></button>
+            <button data-paper="linen"><span>▦</span><b>Keten</b><small>İnce çapraz lif</small></button>
+            <button data-paper="kraft"><span>▤</span><b>Kraft</b><small>Ham kahverengi kağıt</small></button>
+            <button data-paper="marble"><span>◌</span><b>Mermer</b><small>Soluk damar dokusu</small></button>
+            <button data-paper="leather"><span>◼</span><b>Deri</b><small>Koyu kitap cildi hissi</small></button>
+            <button data-paper="rice"><span>⌁</span><b>Pirinç kağıdı</b><small>İnce lifli geleneksel yüzey</small></button>
+          </div>
+        </details>
       </div>
 
       <div class="setting-block">
@@ -215,35 +237,96 @@
     <div class="sheet-card">
       <div class="handle"></div>
       <div class="sheet-title">
-        <div><small>SES TASARIMI</small><h3>Yazma & Ambiyans</h3></div>
+        <div><small>SES TASARIMI</small><h3>Yazma, Sayfa & Ambiyans</h3></div>
         <button class="close-sheet icon-btn">✕</button>
       </div>
 
-      <div class="setting-block">
-        <label>Yazarken çıkan ses</label>
-        <div class="writing-sound-grid">
-          <button data-typing-sound="off">🔇<span>Kapalı</span></button>
-          <button data-typing-sound="typewriter">⌨<span>Daktilo</span></button>
-          <button data-typing-sound="pencil">✎<span>Kalem</span></button>
-          <button data-typing-sound="fountain">✒<span>Mürekkep</span></button>
+      <details class="sound-dropdown" open>
+        <summary><span class="summary-icon">⌨</span><span><b>Yazma sesi</b><small id="typingSoundLabel">Kapalı</small></span><i>⌄</i></summary>
+        <div class="option-list sound-option-list">
+          <button data-typing-sound="off"><span>🔇</span><b>Kapalı</b><small>Sessiz yazım</small></button>
+          <button data-typing-sound="typewriter"><span>⌨</span><b>Yumuşak daktilo</b><small>Tok ama sivri olmayan tuş</small></button>
+          <button data-typing-sound="felt"><span>●</span><b>Keçe tuş</b><small>Çok yumuşak dokunuş</small></button>
+          <button data-typing-sound="pencil"><span>✎</span><b>Kurşun kalem</b><small>Hafif sürtünme</small></button>
+          <button data-typing-sound="fountain"><span>✒</span><b>Dolma kalem</b><small>İnce mürekkep akışı</small></button>
+          <button data-typing-sound="quill"><span>🪶</span><b>Tüy kalem</b><small>Kuru, yumuşak çizgi</small></button>
+          <button data-typing-sound="brush"><span>🖌</span><b>Fırça</b><small>İpeksi sürüş</small></button>
+          <button data-typing-sound="bubble"><span>◌</span><b>Bubble</b><small>Yuvarlak, yumuşak pop</small></button>
+          <button data-typing-sound="droplet"><span>💧</span><b>Damla</b><small>Kısa su damlası</small></button>
+          <button data-typing-sound="softtap"><span>·</span><b>Soft tap</b><small>Minimal dokunma</small></button>
+          <button data-typing-sound="glass"><span>✧</span><b>Cam tık</b><small>Çok hafif parlak tık</small></button>
+          <button data-typing-sound="chalk"><span>▰</span><b>Yumuşak tebeşir</b><small>Mat ve düşük frekanslı</small></button>
         </div>
-        <label class="volume">Yazma sesi
-          <input id="typingVolume" type="range" min="0" max="0.55" step="0.01" value="0.18">
-        </label>
-      </div>
+        <label class="volume">Yazma sesi <input id="typingVolume" type="range" min="0" max="0.35" step="0.01" value="0.12"></label>
+      </details>
 
-      <div class="setting-block">
-        <label>Arka plan ambiyansı</label>
-        <div class="sound-grid">
-          <button data-sound="rain">🌧️ Yağmur</button>
-          <button data-sound="fire">🔥 Şömine</button>
-          <button data-sound="brown">🌌 Derin uğultu</button>
-          <button data-sound="off">🔇 Kapat</button>
+      <details class="sound-dropdown">
+        <summary><span class="summary-icon">📄</span><span><b>Sayfa çevirme sesi</b><small id="pageSoundLabel">Yumuşak kağıt</small></span><i>⌄</i></summary>
+        <div class="option-list sound-option-list">
+          <button data-page-sound="off"><span>🔇</span><b>Kapalı</b><small>Sayfa sesi yok</small></button>
+          <button data-page-sound="paper-soft"><span>📄</span><b>Yumuşak kağıt</b><small>İnce, doğal hışırtı</small></button>
+          <button data-page-sound="paper-crisp"><span>▱</span><b>Yeni kağıt</b><small>Biraz daha net dönüş</small></button>
+          <button data-page-sound="parchment"><span>📜</span><b>Parşömen</b><small>Kuru eski sayfa</small></button>
+          <button data-page-sound="cloth"><span>◆</span><b>Kumaş sayfa</b><small>Kadifemsi yumuşak sürüş</small></button>
         </div>
-        <label class="volume">Ambiyans
-          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.16">
-        </label>
+        <label class="volume">Sayfa sesi <input id="pageSoundVolume" type="range" min="0" max="0.35" step="0.01" value="0.14"></label>
+      </details>
+
+      <details class="sound-dropdown">
+        <summary><span class="summary-icon">♪</span><span><b>Arka plan ambiyansı</b><small id="ambientSoundLabel">Kapalı</small></span><i>⌄</i></summary>
+        <div class="option-list sound-option-list">
+          <button data-sound="off"><span>🔇</span><b>Kapalı</b><small>Arka plan sesi yok</small></button>
+          <button data-sound="rain-soft"><span>🌦</span><b>Hafif yağmur</b><small>Pencere arkası ince yağış</small></button>
+          <button data-sound="rain-heavy"><span>🌧</span><b>Yoğun yağmur</b><small>Daha dolgun yağış</small></button>
+          <button data-sound="fire"><span>🔥</span><b>Şömine</b><small>Yumuşak ateş uğultusu</small></button>
+          <button data-sound="library"><span>📚</span><b>Kütüphane</b><small>Sakin oda havası</small></button>
+          <button data-sound="cafe"><span>☕</span><b>Kafe</b><small>Uzak, bulanık uğultu</small></button>
+          <button data-sound="forest"><span>🌲</span><b>Orman</b><small>Yaprak ve hava dokusu</small></button>
+          <button data-sound="night"><span>🌙</span><b>Gece</b><small>Yumuşak gece fonu</small></button>
+          <button data-sound="ocean"><span>🌊</span><b>Okyanus</b><small>Yavaş dalga nefesi</small></button>
+          <button data-sound="train"><span>🚂</span><b>Gece treni</b><small>Düşük ritmik ray sesi</small></button>
+          <button data-sound="wind"><span>🍃</span><b>Rüzgar</b><small>Yumuşak hava akışı</small></button>
+          <button data-sound="vinyl"><span>◉</span><b>Plak</b><small>Hafif analog doku</small></button>
+          <button data-sound="clock"><span>🕰</span><b>Saat</b><small>Uzak, düşük tık</small></button>
+          <button data-sound="brown"><span>🟤</span><b>Brown noise</b><small>Derin odak uğultusu</small></button>
+          <button data-sound="pink"><span>🩷</span><b>Pink noise</b><small>Daha dengeli gürültü</small></button>
+          <button data-sound="snow"><span>❄</span><b>Kar fırtınası</b><small>Boğuk kış rüzgarı</small></button>
+        </div>
+        <label class="volume">Ambiyans <input id="volume" type="range" min="0" max="0.45" step="0.01" value="0.12"></label>
+      </details>
+    </div>
+  </div>
+
+  <div id="coverSheet" class="sheet">
+    <div class="sheet-card">
+      <div class="handle"></div>
+      <div class="sheet-title">
+        <div><small>KİTAP KAPAĞI</small><h3>Kapak görseli</h3></div>
+        <button class="close-sheet icon-btn">✕</button>
       </div>
+      <div id="coverPreview" class="cover-preview">
+        <span>Kapak görseli henüz eklenmedi.</span>
+      </div>
+      <input id="coverInput" type="file" accept="image/*" hidden>
+      <div class="cover-actions">
+        <button id="chooseCover" class="primary">🖼 Görsel seç</button>
+        <button id="removeCover" class="secondary">✕ Kapağı kaldır</button>
+      </div>
+      <div class="setting-block">
+        <label>Görsel yerleşimi</label>
+        <div class="segmented">
+          <button data-cover-fit="cover">Doldur</button>
+          <button data-cover-fit="contain">Tam göster</button>
+        </div>
+      </div>
+      <div class="setting-block">
+        <label>Başlık katmanı</label>
+        <div class="segmented">
+          <button data-cover-text="on">Başlığı göster</button>
+          <button data-cover-text="off">Sadece görsel</button>
+        </div>
+      </div>
+      <small class="setting-note">Görsel cihazında yerel olarak saklanır; GitHub'a yüklenmez. Uygulama çevrimdışıyken de görünür.</small>
     </div>
   </div>
 
