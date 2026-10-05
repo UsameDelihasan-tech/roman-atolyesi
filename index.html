@@ -141,6 +141,7 @@
   </section>
 
 
+
   <section id="sceneView" class="view">
     <div class="scene-wrap">
       <div class="scene-titlebar">
@@ -148,7 +149,11 @@
           <small>3D KİTAP ODASI</small>
           <strong id="sceneBookName">Adsız Roman</strong>
         </div>
-        <button id="sceneResetBtn" class="mini-btn">↺ Sıfırla</button>
+        <div class="scene-title-actions">
+          <button id="sceneOpenBtn" class="mini-btn">▤ Aç</button>
+          <button id="sceneWriteBtn" class="mini-btn" disabled>✎ 3D'de yaz</button>
+          <button id="sceneResetBtn" class="mini-btn">↺ Sıfırla</button>
+        </div>
       </div>
 
       <div id="sceneViewport" class="scene-viewport" aria-label="3D kitap sahnesi">
@@ -162,29 +167,61 @@
         </div>
 
         <div id="sceneBookRig" class="scene-book-rig">
-          <div id="sceneBook3D" class="scene-book3d" role="button" tabindex="0" aria-label="3D kitabı odakla">
-            <div class="scene-face scene-cover-front">
-              <div id="sceneCoverImage" class="scene-cover-image"></div>
-              <div class="scene-cover-glaze"></div>
-              <div class="scene-cover-text">
-                <small>ROMAN</small>
-                <strong id="sceneCoverTitle">Adsız Roman</strong>
+          <div id="sceneBook3D" class="scene-book3d" role="button" tabindex="0" aria-label="3D kitabı aç">
+            <div class="scene-closed-book">
+              <div class="scene-pages-solid" aria-hidden="true">
+                <i class="scene-solid-face scene-pages-front"></i>
+                <i class="scene-solid-face scene-pages-back"></i>
+                <i class="scene-solid-face scene-pages-right"></i>
+                <i class="scene-solid-face scene-pages-left"></i>
+                <i class="scene-solid-face scene-pages-top"></i>
+                <i class="scene-solid-face scene-pages-bottom"></i>
+              </div>
+
+              <div class="scene-cover-panel scene-cover-front">
+                <div id="sceneCoverImage" class="scene-cover-image"></div>
+                <div class="scene-cover-glaze"></div>
+                <div class="scene-cover-text">
+                  <small>ROMAN</small>
+                  <strong id="sceneCoverTitle">Adsız Roman</strong>
+                </div>
+              </div>
+              <div class="scene-cover-panel scene-cover-back"></div>
+              <div class="scene-spine-solid" aria-hidden="true"></div>
+            </div>
+
+            <div id="sceneOpenBook" class="scene-open-book" aria-label="Açık 3D kitap">
+              <div class="scene-open-cover scene-open-cover-left">
+                <div id="sceneOpenCoverImage" class="scene-open-cover-image"></div>
+              </div>
+              <div class="scene-open-cover scene-open-cover-right"></div>
+              <div class="scene-open-stack scene-open-stack-left" aria-hidden="true"></div>
+              <div class="scene-open-stack scene-open-stack-right" aria-hidden="true"></div>
+
+              <article id="sceneLeftPage" class="scene-open-page scene-open-page-left paper-surface" aria-label="Sol sayfa"></article>
+              <article id="sceneRightPage" class="scene-open-page scene-open-page-right paper-surface" aria-label="Sağ sayfa"></article>
+              <div class="scene-open-gutter" aria-hidden="true"></div>
+
+              <div id="sceneTurnPage" class="scene-turn-page" aria-hidden="true">
+                <article id="sceneTurnFront" class="scene-turn-face scene-turn-front paper-surface"></article>
+                <article id="sceneTurnBack" class="scene-turn-face scene-turn-back paper-surface"></article>
               </div>
             </div>
-            <div class="scene-face scene-cover-back"></div>
-            <div class="scene-face scene-page-right"></div>
-            <div class="scene-face scene-page-left"></div>
-            <div class="scene-face scene-page-top"></div>
-            <div class="scene-face scene-page-bottom"></div>
-            <div class="scene-face scene-spine"></div>
           </div>
+
           <div class="scene-book-shadow" aria-hidden="true"></div>
         </div>
 
         <div class="scene-glass-highlight" aria-hidden="true"></div>
         <div class="scene-gesture-hint" id="sceneGestureHint">
-          <b>Tek parmak</b> döndür · <b>İki parmak</b> yakınlaştır · Kitaba dokun odakla
+          <b>Kitaba dokun</b> aç · boş alanda sürükle döndür · iki parmak yakınlaştır
         </div>
+      </div>
+
+      <div class="scene-reading-bar">
+        <span id="sceneReadingStatus">Kapalı kitap</span>
+        <strong id="scenePageIndicator">—</strong>
+        <span id="scenePageCount">1 sayfa</span>
       </div>
 
       <div class="scene-controls" aria-label="3D görünüm kontrolleri">
@@ -201,13 +238,24 @@
           <input id="sceneZoom" type="range" min="60" max="170" value="100" step="1">
         </div>
         <div class="scene-meta">
-          <span id="scenePageCount">1 sayfa</span>
-          <span>60° varsayılan açı</span>
-          <span>GPU-hafif 3D</span>
+          <span>Kapalıyken: kitabı döndür</span>
+          <span>Açıkken: sayfayı sürükle</span>
+          <span>Arka planı sürükle: kamera</span>
         </div>
+      </div>
+
+      <div id="sceneEditorPanel" class="scene-editor-panel" aria-hidden="true">
+        <div class="scene-editor-head">
+          <div><small>3D CANLI YAZIM</small><strong id="sceneEditorChapterLabel">Bölüm</strong></div>
+          <button id="sceneEditorClose" class="icon-btn" aria-label="3D yazım panelini kapat">✕</button>
+        </div>
+        <input id="sceneEditorTitle" class="scene-editor-title" aria-label="Bölüm adı">
+        <textarea id="sceneEditorText" class="scene-editor-text" spellcheck="true" placeholder="Bu bölümde yazmaya devam et…"></textarea>
+        <small class="scene-editor-note">Metin yazarken açık kitaptaki sayfalar kısa bir gecikmeyle canlı güncellenir.</small>
       </div>
     </div>
   </section>
+
 
   <nav class="bottom-nav">
     <button data-view-target="home" class="active"><b>⌂</b><span>Ana sayfa</span></button>

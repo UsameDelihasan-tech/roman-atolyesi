@@ -1,4 +1,4 @@
-const CACHE="roman-atolyesi-shell-v7";
+const CACHE="roman-atolyesi-shell-v8";
 const ASSETS=[
   "./","./index.html","./style.css","./app.js","./manifest.json",
   "./icon-192.png","./icon-512.png","./icon-512-maskable.png","./paper-grain.png",

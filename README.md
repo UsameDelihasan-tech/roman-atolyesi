@@ -1,31 +1,24 @@
-# Roman Atölyesi v6 — Smooth Mechanics
+# Roman Atölyesi v8 — Birleşik 3D Fiziksel Kitap
 
-v5 Ultra Kitap üzerine performans ve mikro-etkileşim revizyonu.
+Bu sürüm v7 üzerindeki 3D kitap modelini yeniden kurar.
 
-- Minimal, yumuşak buton basma geri bildirimi
-- Kısa ve engellemeyen açılış animasyonları
-- Görünüm ve sheet geçişleri yumuşatıldı
-- Yeni bölüm toast yerine listede doğal biçimde oluşur
-- Yeniden adlandırma satır içinde yapılır; silme satırı yumuşakça kapanır
-- Ana sayfadaki uzun “Çift sayfa · Gerçekçi 3D · %...” metni sade rozetlere ayrıldı
-- %70–130 sayfa ölçeği sayfa kapasitesini artık belirgin şekilde değiştirir
-- Slider sırasında sayfalama debounce ile canlı güncellenir
-- Yazarken bölüm listesini her tuşta yeniden çizme kaldırıldı
-- Sayfa sürükleme geometri ölçümleri pointerdown anında cache edilir
-- Flip CSS değişkenleri tüm document yerine kitap alt ağacında güncellenir
-- Düşük kaynaklı telefonlarda adaptif performans modu
-- roman_atolyesi_v1 verisi korunur
+## v8 değişiklikleri
+- 3D kapak, sayfa bloğu ve sırt tek bir merkezli koordinat sisteminde çalışır.
+- Döndürme sırasında sayfa bloğunun / kapağın ayrılıp uzağa fırlaması düzeltildi.
+- Kapak görseli yalnızca kapak yüzeyine kırpılır; sayfa kenarlarına taşmaz.
+- Kitaba dokunarak 3D ortamda açma / kapatma.
+- Açık 3D kitapta gerçek roman sayfalarını okuma.
+- Sayfayı tek parmakla canlı sürükleyerek çevirme; dönüş parmağı takip eder.
+- Açık kitapta arka planı sürüklemek kamerayı döndürür.
+- İki parmak pinch zoom ve iki parmak dönüşü korunur.
+- 3D modunda “3D'de yaz” paneli ile mevcut bölüm canlı düzenlenebilir.
+- Yazılan metin kısa bir debounce sonrası açık kitaba yeniden sayfalanır.
+- Sayfa sayısı arttıkça kapalı 3D kitabın fiziksel derinliği 9–56 px aralığında artar.
+- Açık kitapta sol / sağ sayfa yığını mevcut konuma göre görsel olarak değişir.
+- 11 px minimum yazı boyutu korunur.
+- Tüm v5/v6 ses, texture, kapak, gündüz/gece, PWA ve offline özellikleri korunur.
+- roman_atolyesi_v1 localStorage anahtarı korunur; mevcut roman verileri silinmez.
 
-
-## v7 – 3D Kitap Odası
-- Ayrı bir **3D Masa** modu eklendi.
-- Varsayılan kamera açısı **60°**; 90° tam tepeden görünüm yerine belirgin perspektif verir.
-- Tek parmakla kitabı döndürme / açı değiştirme.
-- İki parmakla pinch zoom; iki parmak döndürme ile hafif roll.
-- Açı, yön ve yakınlık ekrandaki slider'lardan da anlık ayarlanabilir.
-- Kapak görseli 3D kitabın kapağına da uygulanır.
-- Kitap kalınlığı sayfa sayısıyla birlikte 3D modelde büyür.
-- Masada gelecekte çoklu kitap desteği için hafif dekoratif kitap objeleri eklendi.
-- 3D sahne WebGL kütüphanesi kullanmaz; CSS 3D + requestAnimationFrame ile düşük gecikmeli ve mobil-dostudur.
-- Normal Gerçekçi 3D okuma modu da hafif eğik perspektife alındı.
-- Yazı boyutu alt sınırı **11 px** yapıldı.
+## Performans
+3D sahne WebGL motoru kullanmaz. CSS 3D transform + requestAnimationFrame ile çalışır.
+Sürükleme sırasında yalnızca kitap rig'i veya tek page-turn katmanı güncellenir.

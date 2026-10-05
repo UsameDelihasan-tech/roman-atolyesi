@@ -25,7 +25,7 @@ const fresh=()=>{
   return{
     bookTitle:"Adsız Roman",mode:"night",ambience:"library",paper:"antique",
     font:"georgia",fontSize:19,pageScale:100,readerLayout:"single",flipStyle:"realistic",
-    scenePitch:60,sceneYaw:-18,sceneZoom:100,sceneRoll:0,
+    scenePitch:60,sceneYaw:-18,sceneZoom:100,sceneRoll:0,sceneOpen:false,
     typingSound:"off",typingVolume:.12,pageSound:"paper-soft",pageSoundVolume:.14,
     ambientSound:"off",ambientVolume:.12,coverFit:"cover",coverText:true,soundProfileVersion:5,activeId:id,
     chapters:[{id,title:"Bölüm 1",content:""}]
@@ -59,6 +59,7 @@ state.scenePitch=Math.max(25,Math.min(90,Number(state.scenePitch)||60));
 state.sceneYaw=Number.isFinite(Number(state.sceneYaw))?Math.max(-180,Math.min(180,Number(state.sceneYaw))):-18;
 state.sceneZoom=Math.max(60,Math.min(170,Number(state.sceneZoom)||100));
 state.sceneRoll=Math.max(-28,Math.min(28,Number(state.sceneRoll)||0));
+state.sceneOpen=state.sceneOpen===true;
 if(!state.soundProfileVersion||state.soundProfileVersion<5){
   state.typingVolume=Math.min(state.typingVolume||.12,.12);
   state.ambientVolume=Math.min(state.ambientVolume||.12,.12);
@@ -90,8 +91,14 @@ function updateBookThickness(pageCount=estimatedBookPages()){
   const px=clamp(4+pageCount*.055,4,30);
   document.documentElement.style.setProperty("--book-thickness",`${px.toFixed(1)}px`);
   document.documentElement.style.setProperty("--book-thickness-neg",`${(-px).toFixed(1)}px`);
-  const scenePx=clamp(12+pageCount*.14,12,44);
-  document.documentElement.style.setProperty("--scene-book-thickness",`${scenePx.toFixed(1)}px`);
+
+  /* 3D model için tek bir merkezli derinlik. Tüm yüzler aynı depth değişkenini kullanır;
+     böylece döndürürken kapak / sayfa bloğu birbirinden kopmaz. */
+  const sceneDepth=clamp(9+pageCount*.30,9,56);
+  document.documentElement.style.setProperty("--scene-book-thickness",`${sceneDepth.toFixed(1)}px`);
+  document.documentElement.style.setProperty("--scene-depth",`${sceneDepth.toFixed(1)}px`);
+  document.documentElement.style.setProperty("--scene-half-depth",`${(sceneDepth/2).toFixed(2)}px`);
+  document.documentElement.style.setProperty("--scene-half-depth-neg",`${(-sceneDepth/2).toFixed(2)}px`);
 }
 
 function updateReaderSummary(){
@@ -334,6 +341,7 @@ function scheduleRepaginate(delay=90){
   repaginateTimer=setTimeout(()=>{
     buildReaderPages();
     if($("#readerView").classList.contains("active"))renderReader();
+    if($("#sceneView").classList.contains("active"))renderScene();
   },delay);
 }
 $("#pageScale").oninput=e=>{
@@ -347,11 +355,17 @@ $$('[data-cover-fit]').forEach(b=>b.onclick=()=>{state.coverFit=b.dataset.coverF
 $$('[data-cover-text]').forEach(b=>b.onclick=()=>{state.coverText=b.dataset.coverText==="on";saveNow();applyAppearance();});
 $("#layoutBtn").onclick=()=>{state.readerLayout=state.readerLayout==="single"?"spread":"single";saveNow();applyAppearance();buildReaderPages();renderReader();};
 
-/* ---------- v7: hafif 3D masa / fanus modu ---------- */
+/* ---------- v8: birleşik 3D kitap / açma / canlı okuma-yazma ---------- */
 let sceneFrame=0;
 const scenePointers=new Map();
 let sceneGesture=null;
 let sceneMoved=false;
+let sceneEditTimer=0;
+
+const scenePageDrag={
+  active:false,pointerId:null,startX:0,startY:0,lastX:0,lastTime:0,velocityX:0,
+  dir:0,progress:0,prepared:false,commitIndex:0,rectW:1,dragY:0
+};
 
 function normalizeAngle(v){
   let n=v;
@@ -373,17 +387,68 @@ function applySceneTransform(){
   rig.style.setProperty("--scene-roll",`${roll.toFixed(2)}deg`);
   rig.style.setProperty("--scene-scale",scale.toFixed(3));
   const rad=yaw*Math.PI/180;
-  rig.style.setProperty("--scene-shadow-x",`${(Math.sin(rad)*24).toFixed(1)}px`);
-  rig.style.setProperty("--scene-shadow-y",`${(18+tilt*.18).toFixed(1)}px`);
+  rig.style.setProperty("--scene-shadow-x",`${(Math.sin(rad)*20).toFixed(1)}px`);
+  rig.style.setProperty("--scene-shadow-y",`${(14+tilt*.15).toFixed(1)}px`);
   rig.style.setProperty("--scene-light-x",`${clamp(52-yaw*.12,20,82).toFixed(1)}%`);
   rig.style.setProperty("--scene-light-y",`${clamp(24+tilt*.55,18,65).toFixed(1)}%`);
-  if($("#scenePitchValue"))$("#scenePitchValue").textContent=`${Math.round(pitch)}°`;
-  if($("#sceneYawValue"))$("#sceneYawValue").textContent=`${Math.round(yaw)}°`;
-  if($("#sceneZoomValue"))$("#sceneZoomValue").textContent=`%${Math.round(zoom)}`;
+  $("#scenePitchValue").textContent=`${Math.round(pitch)}°`;
+  $("#sceneYawValue").textContent=`${Math.round(yaw)}°`;
+  $("#sceneZoomValue").textContent=`%${Math.round(zoom)}`;
 }
 function requestSceneTransform(){
   if(sceneFrame)return;
   sceneFrame=requestAnimationFrame(()=>{sceneFrame=0;applySceneTransform();});
+}
+function sceneSpreadLeftIndex(){
+  if(readerIndex<=0)return-1;
+  return readerIndex%2===0?readerIndex-1:readerIndex;
+}
+function sceneCanTurn(dir){
+  const l=sceneSpreadLeftIndex(),r=l+1;
+  return dir>0?r<readerPages.length-1:l>=0;
+}
+function setScenePage(el,index){
+  if(index<0||index>=readerPages.length){
+    el.innerHTML=pageHtml(null,-1);
+    el.classList.add("blank-page");
+    return;
+  }
+  el.innerHTML=pageHtml(readerPages[index],index);
+  el.classList.remove("blank-page");
+}
+function sceneCurrentPage(){
+  const l=sceneSpreadLeftIndex(),r=l+1;
+  return readerPages[r]||readerPages[l]||readerPages[0]||null;
+}
+function renderSceneSpread(){
+  const book=$("#sceneBook3D");
+  if(!book)return;
+  book.classList.toggle("is-open",!!state.sceneOpen);
+  $("#sceneOpenBtn").textContent=state.sceneOpen?"▣ Kapat":"▤ Aç";
+  $("#sceneWriteBtn").disabled=!state.sceneOpen;
+
+  if(!state.sceneOpen){
+    $("#sceneReadingStatus").textContent="Kapalı kitap";
+    $("#scenePageIndicator").textContent="—";
+    $("#sceneGestureHint").innerHTML="<b>Kitaba dokun</b> aç · boş alanda sürükle döndür · iki parmak yakınlaştır";
+    return;
+  }
+
+  const l=sceneSpreadLeftIndex(),r=l+1;
+  setScenePage($("#sceneLeftPage"),l);
+  setScenePage($("#sceneRightPage"),r);
+
+  const first=l>=0?l+1:r+1;
+  const last=r<readerPages.length?r+1:l+1;
+  $("#scenePageIndicator").textContent=first===last?`${first} / ${readerPages.length}`:`${first}–${last} / ${readerPages.length}`;
+  $("#sceneReadingStatus").textContent=(readerPages[r]||readerPages[l])?.chapterTitle||"Açık kitap";
+  $("#sceneGestureHint").innerHTML="<b>Sayfayı sürükle</b> çevir · arka planı sürükle döndür · iki parmak yakınlaştır";
+
+  /* Açık kitapta sayfa yığınının hangi tarafta yoğun olduğunu hafifçe göster. */
+  const before=clamp((Math.max(0,l+1))/Math.max(1,readerPages.length),0,1);
+  const after=1-before;
+  $("#sceneOpenBook").style.setProperty("--scene-left-stack-opacity",(0.22+before*.58).toFixed(2));
+  $("#sceneOpenBook").style.setProperty("--scene-right-stack-opacity",(0.22+after*.58).toFixed(2));
 }
 function renderScene(){
   buildReaderPages();
@@ -391,19 +456,36 @@ function renderScene(){
   $("#sceneBookName").textContent=state.bookTitle||"Adsız Roman";
   $("#sceneCoverTitle").textContent=state.bookTitle||"Adsız Roman";
   $("#scenePageCount").textContent=`${readerPages.length||estimatedBookPages()} sayfa`;
-  $("#scenePitch").value=state.scenePitch;
-  $("#sceneYaw").value=state.sceneYaw;
-  $("#sceneZoom").value=state.sceneZoom;
+
+  const pitch=$("#scenePitch"),yaw=$("#sceneYaw"),zoom=$("#sceneZoom");
+  pitch.min="25";pitch.max="90";pitch.value=String(state.scenePitch);
+  yaw.min="-180";yaw.max="180";yaw.value=String(state.sceneYaw);
+  zoom.min="60";zoom.max="170";zoom.value=String(state.sceneZoom);
+
+  renderSceneSpread();
   applySceneTransform();
 }
 function resetScene(focus=false){
   state.scenePitch=60;
   state.sceneYaw=-18;
   state.sceneRoll=0;
-  state.sceneZoom=focus?112:100;
+  state.sceneZoom=focus?108:100;
   saveNow();renderScene();
 }
+function setSceneOpen(open){
+  state.sceneOpen=!!open;
+  if(state.sceneOpen){
+    buildReaderPages();
+    if(!readerPages.length)readerIndex=0;
+  }else{
+    closeSceneEditor();
+    resetScenePageDrag(true);
+  }
+  saveNow();
+  renderSceneSpread();
+}
 $("#sceneResetBtn").onclick=()=>resetScene(false);
+$("#sceneOpenBtn").onclick=()=>setSceneOpen(!state.sceneOpen);
 $("#scenePitch").oninput=e=>{state.scenePitch=clamp(Number(e.target.value)||60,25,90);requestSceneTransform();};
 $("#sceneYaw").oninput=e=>{state.sceneYaw=normalizeAngle(Number(e.target.value)||0);requestSceneTransform();};
 $("#sceneZoom").oninput=e=>{state.sceneZoom=clamp(Number(e.target.value)||100,60,170);requestSceneTransform();};
@@ -420,16 +502,186 @@ function sceneBeginGesture(){
     sceneGesture={type:"pinch",dist:scenePointDistance(points[0],points[1])||1,angle:scenePointAngle(points[0],points[1]),zoom:state.sceneZoom,roll:state.sceneRoll,pitch:state.scenePitch,yaw:state.sceneYaw};
   }
 }
+
+/* ----- 3D açık kitapta canlı sayfa sürükleme ----- */
+function scenePreparePageTurn(dir){
+  if(!sceneCanTurn(dir))return false;
+  const l=sceneSpreadLeftIndex(),r=l+1;
+  const turn=$("#sceneTurnPage"),front=$("#sceneTurnFront"),back=$("#sceneTurnBack");
+  turn.className=`scene-turn-page visible ${dir>0?"dir-next":"dir-prev"}`;
+  turn.style.transition="none";
+
+  if(dir>0){
+    front.innerHTML=pageHtml(readerPages[r],r);
+    back.innerHTML=pageHtml(readerPages[l+2],l+2);
+    setScenePage($("#sceneLeftPage"),l);
+    setScenePage($("#sceneRightPage"),l+3);
+    scenePageDrag.commitIndex=l+2;
+  }else{
+    const targetLeft=l-2,targetRight=l-1;
+    front.innerHTML=pageHtml(readerPages[l],l);
+    back.innerHTML=pageHtml(readerPages[targetRight],targetRight);
+    setScenePage($("#sceneLeftPage"),targetLeft);
+    setScenePage($("#sceneRightPage"),targetRight);
+    scenePageDrag.commitIndex=Math.max(0,targetLeft<0?0:targetLeft);
+  }
+  scenePageDrag.prepared=true;
+  $("#sceneBook3D").classList.add("scene-page-dragging");
+  return true;
+}
+function paintScenePageTurn(){
+  const p=clamp(scenePageDrag.progress,0,1);
+  const dir=scenePageDrag.dir;
+  const angle=(dir>0?-180:180)*Math.pow(p,.82);
+  const arc=Math.sin(Math.PI*p);
+  const rx=clamp((-scenePageDrag.dragY/150)*11,-13,13);
+  const rz=clamp((scenePageDrag.dragY/160)*(dir>0?-6:6),-8,8);
+  const z=arc*13;
+  $("#sceneTurnPage").style.transform=`translateZ(${z.toFixed(1)}px) rotateX(${rx.toFixed(1)}deg) rotateY(${angle.toFixed(1)}deg) rotateZ(${rz.toFixed(1)}deg)`;
+}
+function resetScenePageDrag(restore=false){
+  const turn=$("#sceneTurnPage");
+  turn.className="scene-turn-page";
+  turn.style.transform="";
+  turn.style.transition="";
+  $("#sceneBook3D").classList.remove("scene-page-dragging");
+  scenePageDrag.active=false;scenePageDrag.pointerId=null;scenePageDrag.dir=0;scenePageDrag.progress=0;scenePageDrag.prepared=false;scenePageDrag.dragY=0;
+  if(restore&&state.sceneOpen)renderSceneSpread();
+}
+function beginScenePageDrag(e){
+  if(!state.sceneOpen)return false;
+  scenePageDrag.active=true;
+  scenePageDrag.pointerId=e.pointerId;
+  scenePageDrag.startX=e.clientX;scenePageDrag.startY=e.clientY;
+  scenePageDrag.lastX=e.clientX;scenePageDrag.lastTime=performance.now();
+  scenePageDrag.velocityX=0;scenePageDrag.dir=0;scenePageDrag.progress=0;scenePageDrag.prepared=false;scenePageDrag.dragY=0;
+  scenePageDrag.rectW=Math.max(220,$("#sceneOpenBook").getBoundingClientRect().width);
+  return true;
+}
+function moveScenePageDrag(e){
+  if(!scenePageDrag.active||e.pointerId!==scenePageDrag.pointerId)return;
+  const now=performance.now(),dt=Math.max(8,now-scenePageDrag.lastTime);
+  scenePageDrag.velocityX=(e.clientX-scenePageDrag.lastX)/dt;
+  scenePageDrag.lastX=e.clientX;scenePageDrag.lastTime=now;
+  const dx=e.clientX-scenePageDrag.startX,dy=e.clientY-scenePageDrag.startY;
+  scenePageDrag.dragY=dy;
+  if(!scenePageDrag.dir&&Math.abs(dx)>5)scenePageDrag.dir=dx<0?1:-1;
+  if(!scenePageDrag.dir)return;
+  if(!sceneCanTurn(scenePageDrag.dir)){
+    scenePageDrag.progress=Math.min(.06,Math.abs(dx)/scenePageDrag.rectW*.12);
+    return;
+  }
+  if(!scenePageDrag.prepared&&!scenePreparePageTurn(scenePageDrag.dir))return;
+  const correct=scenePageDrag.dir>0?-dx:dx;
+  scenePageDrag.progress=clamp((correct+Math.abs(dy)*.08)/(scenePageDrag.rectW*.47),0,1);
+  paintScenePageTurn();
+  if(e.cancelable)e.preventDefault();
+}
+function endScenePageDrag(e){
+  if(!scenePageDrag.active||e.pointerId!==scenePageDrag.pointerId)return;
+  const dx=e.clientX-scenePageDrag.startX;
+  const velocityDir=scenePageDrag.dir>0?-scenePageDrag.velocityX:scenePageDrag.velocityX;
+  const commit=scenePageDrag.prepared&&(scenePageDrag.progress>.24||velocityDir>.48||Math.abs(dx)>58);
+  if(!scenePageDrag.prepared){resetScenePageDrag(true);return;}
+
+  const turn=$("#sceneTurnPage");
+  const target=commit?1:0;
+  const duration=Math.round(clamp(170-Math.abs(velocityDir)*28,95,180));
+  turn.classList.add("settling");
+  turn.style.setProperty("--scene-page-settle",`${duration}ms`);
+  scenePageDrag.progress=target;
+  paintScenePageTurn();
+  if(commit)playPageTurnSound(state.pageSound,Math.abs(velocityDir),.5);
+
+  setTimeout(()=>{
+    if(commit)readerIndex=scenePageDrag.commitIndex;
+    resetScenePageDrag(false);
+    renderSceneSpread();
+  },duration+12);
+}
+
+/* ----- 3D içinde canlı bölüm yazımı ----- */
+function sceneEditableChapter(){
+  const page=sceneCurrentPage();
+  if(!page)return active();
+  return state.chapters.find(c=>c.id===page.chapterId)||active();
+}
+function openSceneEditor(){
+  if(!state.sceneOpen)setSceneOpen(true);
+  const chapter=sceneEditableChapter();
+  if(!chapter)return;
+  state.activeId=chapter.id;
+  $("#sceneEditorChapterLabel").textContent=chapter.title||"Bölüm";
+  $("#sceneEditorTitle").value=chapter.title||"";
+  $("#sceneEditorText").value=chapter.content||"";
+  $("#sceneEditorPanel").classList.add("open");
+  $("#sceneEditorPanel").setAttribute("aria-hidden","false");
+  setTimeout(()=>$("#sceneEditorText").focus(),120);
+}
+function closeSceneEditor(){
+  const panel=$("#sceneEditorPanel");
+  if(!panel)return;
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden","true");
+}
+$("#sceneWriteBtn").onclick=openSceneEditor;
+$("#sceneEditorClose").onclick=closeSceneEditor;
+$("#sceneEditorTitle").oninput=e=>{
+  const c=sceneEditableChapter();if(!c)return;
+  c.title=e.target.value;
+  $("#sceneEditorChapterLabel").textContent=c.title||"Bölüm";
+  if(active().id===c.id)$("#chapterTitle").value=c.title;
+  saveSoon();renderList();updateHome();
+  clearTimeout(sceneEditTimer);
+  sceneEditTimer=setTimeout(()=>{buildReaderPages();renderSceneSpread();},180);
+};
+$("#sceneEditorText").oninput=e=>{
+  const c=sceneEditableChapter();if(!c)return;
+  c.content=e.target.value;
+  if(active().id===c.id)$("#editor").value=c.content;
+  saveSoon();scheduleEditorMetrics();updateHome();
+  clearTimeout(sceneEditTimer);
+  sceneEditTimer=setTimeout(()=>{
+    const keep=c.id;
+    buildReaderPages();
+    const ix=readerPages.findIndex(p=>p.chapterId===keep);
+    if(ix>=0)readerIndex=ix;
+    updateBookThickness(readerPages.length);
+    $("#scenePageCount").textContent=`${readerPages.length} sayfa`;
+    renderSceneSpread();
+  },220);
+};
+
+/* Tek pointer sayfada ise sayfa çevir; ikinci pointer gelirse anında pinch moduna geç. */
 const sceneViewport=$("#sceneViewport");
 sceneViewport.addEventListener("pointerdown",e=>{
   sceneViewport.setPointerCapture?.(e.pointerId);
   scenePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+  const onOpenPage=state.sceneOpen&&!!e.target.closest?.(".scene-open-page,.scene-turn-page");
+  if(onOpenPage&&scenePointers.size===1){
+    beginScenePageDrag(e);
+    $("#sceneBookRig").classList.add("scene-interacting");
+    return;
+  }
+  if(scenePointers.size>=2&&scenePageDrag.active)resetScenePageDrag(true);
   sceneBeginGesture();
   $("#sceneBookRig").classList.add("scene-interacting");
 },{passive:true});
+
 sceneViewport.addEventListener("pointermove",e=>{
   if(!scenePointers.has(e.pointerId))return;
   scenePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+  if(scenePageDrag.active&&scenePointers.size===1){
+    moveScenePageDrag(e);
+    return;
+  }
+  if(scenePageDrag.active&&scenePointers.size>=2){
+    resetScenePageDrag(true);
+    sceneBeginGesture();
+  }
+
   const points=[...scenePointers.values()];
   if(!sceneGesture)return;
   if(points.length===1&&sceneGesture.type==="orbit"){
@@ -448,25 +700,33 @@ sceneViewport.addEventListener("pointermove",e=>{
     sceneMoved=true;
     requestSceneTransform();
   }
-},{passive:true});
+},{passive:false});
+
 function sceneEndPointer(e){
   if(!scenePointers.has(e.pointerId))return;
+  if(scenePageDrag.active&&e.pointerId===scenePageDrag.pointerId)endScenePageDrag(e);
   scenePointers.delete(e.pointerId);
-  if(scenePointers.size)sceneBeginGesture();
-  else{
+  if(scenePointers.size){
+    sceneBeginGesture();
+  }else{
     sceneGesture=null;
     $("#sceneBookRig").classList.remove("scene-interacting");
     saveNow();
   }
 }
 sceneViewport.addEventListener("pointerup",sceneEndPointer,{passive:true});
-sceneViewport.addEventListener("pointercancel",sceneEndPointer,{passive:true});
-$("#sceneBook3D").addEventListener("click",()=>{
+sceneViewport.addEventListener("pointercancel",e=>{
+  if(scenePageDrag.active&&e.pointerId===scenePageDrag.pointerId)resetScenePageDrag(true);
+  sceneEndPointer(e);
+},{passive:true});
+
+$("#sceneBook3D").addEventListener("click",e=>{
   if(sceneMoved){sceneMoved=false;return;}
-  resetScene(true);
+  if(e.target.closest?.(".scene-open-page,.scene-turn-page"))return;
+  if(!state.sceneOpen)setSceneOpen(true);
 });
 $("#sceneBook3D").addEventListener("keydown",e=>{
-  if(e.key==="Enter"||e.key===" "){e.preventDefault();resetScene(true);}
+  if(e.key==="Enter"||e.key===" "){e.preventDefault();setSceneOpen(!state.sceneOpen);}
 });
 
 
@@ -965,14 +1225,16 @@ function applyCoverVisual(){
     coverObjectUrl=URL.createObjectURL(coverBlobCache);
     layer.style.backgroundImage=`url("${coverObjectUrl}")`;layer.style.backgroundSize=state.coverFit;
     preview.style.backgroundImage=`url("${coverObjectUrl}")`;preview.style.backgroundSize=state.coverFit;
-    const sceneLayer=$("#sceneCoverImage"),sceneBook=$("#sceneBook3D");
+    const sceneLayer=$("#sceneCoverImage"),sceneOpenLayer=$("#sceneOpenCoverImage"),sceneBook=$("#sceneBook3D");
     if(sceneLayer){sceneLayer.style.backgroundImage=`url("${coverObjectUrl}")`;sceneLayer.style.backgroundSize=state.coverFit;}
+    if(sceneOpenLayer){sceneOpenLayer.style.backgroundImage=`url("${coverObjectUrl}")`;sceneOpenLayer.style.backgroundSize=state.coverFit;}
     if(sceneBook)sceneBook.classList.add("has-cover");
     cover.classList.add("has-cover");preview.classList.add("has-image");
   }else{
     layer.style.backgroundImage="";preview.style.backgroundImage="";
-    const sceneLayer=$("#sceneCoverImage"),sceneBook=$("#sceneBook3D");
+    const sceneLayer=$("#sceneCoverImage"),sceneOpenLayer=$("#sceneOpenCoverImage"),sceneBook=$("#sceneBook3D");
     if(sceneLayer)sceneLayer.style.backgroundImage="";
+    if(sceneOpenLayer)sceneOpenLayer.style.backgroundImage="";
     if(sceneBook)sceneBook.classList.remove("has-cover");
     cover.classList.remove("has-cover");preview.classList.remove("has-image");
   }
